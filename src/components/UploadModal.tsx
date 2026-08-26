@@ -12,10 +12,14 @@ import {
   FileSpreadsheet,
   Check,
   RefreshCw,
+  Download,
+  Building2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { parseExcelFile, ParsedWorkbook, TARGET_FIELDS, transformToCanonical } from '../utils/excelParser';
 import { ColumnMapping, InvoiceRecord, MappingProfile } from '../types';
+import { downloadColdRoomExcelTemplate } from '../utils/coldRoomExportHelper';
+import { SIAM_COLD_ROOM_INVOICES } from '../data/sampleSage50Data';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -83,37 +87,48 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     );
   };
 
-  const handleLoadDemoDataset = () => {
-    // Simulate loading official Sage 50 sample Excel export
-    const demoHeaders = [
-      'Invoice_Number_Ref',
-      'Invoice_Date_Posted',
-      'Customer_Account_Name',
-      'Sales_Representative',
-      'Product_Category',
-      'SKU_Code',
-      'Item_Description',
-      'Quantity_Shipped',
+  const handleLoadColdRoomDataset = () => {
+    // Generate realistic Thai Cold Storage Wall & Panel dataset
+    const coldRoomHeaders = [
+      'Project_Invoice_No',
+      'Billing_Date',
+      'Due_Date',
+      'Customer_Company_Name',
+      'Project_Sales_Engineer',
+      'Product_Group',
+      'Item_SKU_Code',
+      'Material_Description',
+      'Quantity_SQM_Units',
       'Unit_Price_THB',
       'Net_Sales_Amount',
       'COGS_Cost_Amount',
-      'Paid_Total_Amount',
+      'Paid_Amount_THB',
       'Payment_Status',
     ];
 
-    const demoRows = [
-      ['INV-2026-101', '2026-06-20', 'Bangkok Tech Dynamics', 'Alex Wong', 'Furniture', 'FUR-001', 'Ergonomic Office Chair X1', 40, 3900, 156000, 96000, 156000, 'Paid'],
-      ['INV-2026-102', '2026-06-22', 'Siam Luxury Living', 'Somchai P.', 'Wood Craft', 'FUR-004', 'Solid Teak Dining Table 200cm', 12, 15500, 186000, 100800, 0, 'Overdue'],
-      ['INV-2026-103', '2026-06-28', 'Pattaya Boutique Hotel', 'Somchai P.', 'Outdoor', 'OUT-001', 'Outdoor Rattan Sunbed Luxury', 15, 9200, 138000, 78750, 69000, 'Pending'],
-      ['INV-2026-104', '2026-06-29', 'Phuket Villa Horizon', 'Kanya R.', 'Acoustic', 'ACS-001', 'Acoustic Wall Panel Soundproof (6-Pack)', 25, 2900, 72500, 36750, 72500, 'Paid'],
-      ['INV-2026-105', '2026-06-30', 'Modern Living Co., Ltd.', 'Alex Wong', 'Furniture', 'FUR-002', 'Height Adjustable Desk 160cm Pro', 30, 10400, 312000, 199500, 0, 'Overdue'],
-    ];
+    const coldRoomRows = SIAM_COLD_ROOM_INVOICES.map((inv) => [
+      inv.invoiceNo,
+      inv.date,
+      inv.dueDate,
+      inv.customerName,
+      inv.salesRep,
+      inv.category,
+      inv.itemCode,
+      inv.itemDescription,
+      inv.quantity,
+      inv.unitPrice,
+      inv.netAmount,
+      inv.cogs,
+      inv.paidAmount,
+      inv.status,
+    ]);
 
-    const mockMappings: ColumnMapping[] = demoHeaders.map((h, i) => ({
+    const mockMappings: ColumnMapping[] = coldRoomHeaders.map((h, i) => ({
       sourceColumn: h,
       targetField: [
         'invoiceNo',
         'date',
+        'dueDate',
         'customerName',
         'salesRep',
         'category',
@@ -126,21 +141,21 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         'paidAmount',
         'status',
       ][i],
-      sampleValue: String(demoRows[0][i]),
+      sampleValue: String(coldRoomRows[0][i]),
       status: 'matched',
-      confidence: 99,
+      confidence: 100,
     }));
 
     setParsedData({
-      fileName: 'Sage50_Official_US_Pro_Demo.xlsx',
-      sheetNames: ['Invoices_Line_Items', 'Customer_Master', 'Inventory_Bal'],
+      fileName: 'Sage50_Siam_Cooling_Panel_ColdRoom_Demo.xlsx',
+      sheetNames: ['Invoices_Line_Items', 'Customer_Master', 'Stock_Valuation'],
       selectedSheet: 'Invoices_Line_Items',
-      rawHeaders: demoHeaders,
-      rawRows: demoRows,
+      rawHeaders: coldRoomHeaders,
+      rawRows: coldRoomRows,
       mappings: mockMappings,
       validation: {
-        totalRows: 5,
-        validRows: 5,
+        totalRows: coldRoomRows.length,
+        validRows: coldRoomRows.length,
         warningRows: 0,
         errorRows: 0,
         qualityScore: 100,
@@ -151,6 +166,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setCurrentMappings(mockMappings);
     setSelectedSheet('Invoices_Line_Items');
     setStep('mapping');
+  };
+
+  const handleLoadDemoDataset = () => {
+    handleLoadColdRoomDataset();
   };
 
   const handleCommitImport = () => {
@@ -264,25 +283,44 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 />
               </div>
 
-              {/* Demo Dataset Quick Loader */}
-              <div className="p-3.5 sm:p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 min-w-0">
-                  <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-slate-900 dark:text-white">
-                      ไม่มีไฟล์ตัวอย่างของ Sage 50?
+              {/* Demo Dataset Quick Loader - Thai Cold Storage Company */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200/80 dark:border-blue-800/60 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start space-x-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
+                      <Building2 className="w-4 h-4" />
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      โหลดชุดข้อมูลตัวอย่าง Sage 50 US Pro 2026 เพื่อทดสอบ Dashboard ได้ใน 1 คลิก
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>ชุดข้อมูลตัวอย่าง: บจก. สยาม คูลลิ่งฯ (รับทำผนังห้องเย็น)</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/60 dark:border-emerald-800/40">
+                          แนะนำ
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                        โครงสร้างจริงของธุรกิจรับทำผนังห้องเย็น/แผ่นฉนวน Sandwich Panel (PIR, Rockwool, ประตูห้องเย็น, ค่าแรงติดตั้ง) พร้อมรายชื่อโรงงานลูกค้า 16 โครงการ
+                      </p>
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={handleLoadDemoDataset}
-                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition shrink-0 cursor-pointer self-start sm:self-center shadow-sm shadow-blue-500/20"
-                >
-                  โหลดข้อมูลตัวอย่าง
-                </button>
+
+                <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                  <button
+                    onClick={handleLoadColdRoomDataset}
+                    className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition shrink-0 cursor-pointer shadow-sm shadow-blue-500/20"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>นำเข้าข้อมูลผนังห้องเย็นทันที</span>
+                  </button>
+
+                  <button
+                    onClick={downloadColdRoomExcelTemplate}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition shrink-0 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>ดาวน์โหลดไฟล์ .xlsx ตัวอย่าง</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

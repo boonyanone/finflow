@@ -12,8 +12,11 @@ import {
   ShieldCheck,
   RefreshCw,
   Plus,
+  Download,
+  Building2,
 } from 'lucide-react';
 import { MappingProfile, InvoiceRecord } from '../types';
+import { downloadColdRoomExcelTemplate } from '../utils/coldRoomExportHelper';
 
 interface DataHubViewProps {
   invoices: InvoiceRecord[];
@@ -29,31 +32,41 @@ export const DataHubView: React.FC<DataHubViewProps> = ({
   return (
     <div id="view-data-hub" className="space-y-5 sm:space-y-6 w-full min-w-0">
       {/* Banner */}
-      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0 shadow-sm">
+      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full min-w-0 shadow-sm">
         <div className="flex items-center space-x-3.5 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0 shadow-sm">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white flex flex-wrap items-center gap-2">
-              <span>FinFlow Data Hub &amp; Accounting Excel Ingestion</span>
+              <span>Sage 50 Data Hub &amp; ERP Excel Ingestion Pipeline</span>
               <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200/60 dark:border-blue-800/40 whitespace-nowrap">
                 ETL Pipeline Ready
               </span>
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              นำเข้าไฟล์ Excel/CSV จากระบบบัญชี (Express, Peak, FlowAccount, Sage 50 ฯลฯ) พร้อมระบบ AI Smart Mapping
+              รองรับไฟล์ Excel/CSV จาก Sage 50, Express, Peak, FlowAccount พร้อมระบบ AI Smart Column Mapping
             </p>
           </div>
         </div>
 
-        <button
-          onClick={onOpenUpload}
-          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 self-start sm:self-center shadow-sm shadow-blue-500/20"
-        >
-          <UploadCloud className="w-4 h-4" />
-          <span>นำเข้าไฟล์ Excel ใหม่</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={downloadColdRoomExcelTemplate}
+            className="flex items-center space-x-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer shrink-0 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>ดาวน์โหลด .xlsx ตัวอย่างผนังห้องเย็น</span>
+          </button>
+
+          <button
+            onClick={onOpenUpload}
+            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-sm shadow-blue-500/20"
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span>นำเข้าไฟล์ Excel ใหม่</span>
+          </button>
+        </div>
       </div>
 
       {/* 3 Metric Cards */}
@@ -152,13 +165,13 @@ export const DataHubView: React.FC<DataHubViewProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               <tr className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
                 <td className="py-3 px-3 font-mono font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                  Sage50_Official_US_Pro_Demo.xlsx
+                  Sage50_Siam_Cooling_Panel_ColdRoom_Demo.xlsx
                 </td>
                 <td className="py-3 px-3 text-slate-500 whitespace-nowrap">Invoices_Line_Items</td>
-                <td className="py-3 px-3 text-right font-medium whitespace-nowrap font-mono">16 rows</td>
+                <td className="py-3 px-3 text-right font-medium whitespace-nowrap font-mono">16 records</td>
                 <td className="py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-mono">100%</td>
-                <td className="py-3 px-3 whitespace-nowrap">System Admin</td>
-                <td className="py-3 px-3 text-slate-400 whitespace-nowrap">Today, 10:45 AM</td>
+                <td className="py-3 px-3 whitespace-nowrap">สมชาย มั่นคง (Admin)</td>
+                <td className="py-3 px-3 text-slate-400 whitespace-nowrap">วันนี้ 15:30 น.</td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
                     Success
@@ -167,13 +180,13 @@ export const DataHubView: React.FC<DataHubViewProps> = ({
               </tr>
               <tr className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
                 <td className="py-3 px-3 font-mono font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                  Sage50_Q1_Transactions_Export.xlsx
+                  AR_Aging_Retentions_Export.xlsx
                 </td>
-                <td className="py-3 px-3 text-slate-500 whitespace-nowrap">Sales_Details</td>
-                <td className="py-3 px-3 text-right font-medium whitespace-nowrap font-mono">8 rows</td>
-                <td className="py-3 px-3 text-center font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap font-mono">96.8%</td>
-                <td className="py-3 px-3 whitespace-nowrap">Finance Manager</td>
-                <td className="py-3 px-3 text-slate-400 whitespace-nowrap">Yesterday, 04:30 PM</td>
+                <td className="py-3 px-3 text-slate-500 whitespace-nowrap">AR_Aging_ColdRoom</td>
+                <td className="py-3 px-3 text-right font-medium whitespace-nowrap font-mono">5 records</td>
+                <td className="py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-mono">100%</td>
+                <td className="py-3 px-3 whitespace-nowrap">ศิริพร การเงิน</td>
+                <td className="py-3 px-3 text-slate-400 whitespace-nowrap">เมื่อวาน 11:20 น.</td>
                 <td className="py-3 px-3 text-center whitespace-nowrap">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
                     Success

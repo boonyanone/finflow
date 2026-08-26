@@ -19,6 +19,7 @@ import { SettingsAdminView } from './views/SettingsAdminView';
 
 // Sample Data & Initial State
 import {
+  INITIAL_COMPANIES,
   INITIAL_INVOICES,
   INITIAL_AR_AGING,
   INITIAL_CUSTOMERS,
@@ -38,6 +39,7 @@ import {
   UserProfile,
   UserRole,
   GlobalFilterState,
+  CompanyWorkspace,
 } from './types';
 import { fetchAiExecutiveInsight } from './services/geminiService';
 
@@ -50,6 +52,10 @@ export const App: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Companies / Workspaces
+  const [companies, setCompanies] = useState<CompanyWorkspace[]>(INITIAL_COMPANIES);
+  const [currentCompany, setCurrentCompany] = useState<CompanyWorkspace>(INITIAL_COMPANIES[0]);
 
   // Data Collections
   const [invoices, setInvoices] = useState<InvoiceRecord[]>(INITIAL_INVOICES);
@@ -72,11 +78,11 @@ export const App: React.FC = () => {
   // Current Logged-in User Profile (RBAC Simulation)
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: 'usr-1',
-    name: 'Pi Loh (Admin)',
-    email: 'admin@apexglobal.com',
+    name: 'สมชาย มั่นคง (Admin)',
+    email: 'somchai@siamcooling.co.th',
     role: 'executive',
     department: 'Chief Executive',
-    avatarInitials: 'PL',
+    avatarInitials: 'SC',
     accessibleRepName: undefined,
   });
 
@@ -91,9 +97,15 @@ export const App: React.FC = () => {
 
   // AI Executive Insight state
   const [aiInsightText, setAiInsightText] = useState<string>(
-    'วิเคราะห์ยอดขายปัจจุบันรวม ฿1,855,000 อัตรากำไรเฉลี่ยอยู่ที่ 41.1% พบรายการค้างชำระเกิน 60 วัน 2 รายการ แนะนำให้ติดตามลูกหนี้ก่อนขยายวงเงินเพิ่ม'
+    'วิเคราะห์ภาพรวม บจก. สยาม คูลลิ่งฯ: ยอดขายโครงการสะสม ฿5,473,200 กำไรขั้นต้นรวม 38.3% (฿2,096,400) โดยกลุ่มแผ่น PIR ฉนวนกันไฟ และประตูห้องเย็นสแตนเลสมี Margin สูงสุดที่ 42-45% พบลูกหนี้ค้างชำระเกิน 60 วัน 1 โครงการ (บจก. เบทาฟู้ดส์ โพรเซสซิ่ง ฿368,800) อยู่ระหว่างรออนุมัติส่งมอบงานงวดสุดท้าย'
   );
   const [aiLoading, setAiLoading] = useState<boolean>(false);
+
+  const handleSelectCompany = (comp: CompanyWorkspace) => {
+    setCurrentCompany(comp);
+    setToastMessage(`สลับไปยัง ${comp.name} เรียบร้อยแล้ว`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Drill-down Modal State
   const [drillModal, setDrillModal] = useState<{
@@ -251,6 +263,9 @@ export const App: React.FC = () => {
         onRoleChange={handleRoleChange}
         lang={lang}
         onToggleLang={() => setLang(lang === 'th' ? 'en' : 'th')}
+        currentCompany={currentCompany}
+        companies={companies}
+        onSelectCompany={handleSelectCompany}
       />
 
       {/* 2. Main Content Area */}
