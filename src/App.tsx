@@ -256,6 +256,7 @@ export const App: React.FC = () => {
         features={features}
         onOpenUpload={() => setIsUploadOpen(true)}
         isOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onCloseMobile={() => setIsSidebarOpen(false)}
         theme={theme}
         onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -280,6 +281,7 @@ export const App: React.FC = () => {
           onOpenCopilot={() => setIsCopilotOpen(true)}
           onOpenUpload={() => setIsUploadOpen(true)}
           features={features}
+          isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 

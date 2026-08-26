@@ -75,67 +75,83 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
         {/* 2. Aging Buckets 4 columns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 py-1">
           {/* Current 0-30 */}
-          <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-              <span className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>0 - 30 วัน (ปกติ / Current)</span>
+          <div className="p-4 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span className="font-bold text-emerald-900 dark:text-emerald-300 flex items-center space-x-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>0 - 30 วัน (ปกติ / Current)</span>
+                </span>
+              </div>
+              <div className="text-xl font-black text-emerald-950 dark:text-emerald-100 mt-1 truncate font-mono">
+                ฿{total0_30 > 0 ? total0_30.toLocaleString() : '23,700'}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-100/90 dark:bg-emerald-900/60 text-[11px] text-emerald-800 dark:text-emerald-200 font-bold">
+                ความเสี่ยงต่ำ อยู่ในเครดิตเทอม
               </span>
             </div>
-            <div className="text-xl font-black text-emerald-900 dark:text-emerald-200 mt-1 truncate font-mono">
-              ฿{total0_30 > 0 ? total0_30.toLocaleString() : '23,700'}
-            </div>
-            <span className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-1 block font-medium">
-              ความเสี่ยงต่ำ อยู่ในเครดิตเทอม
-            </span>
           </div>
 
           {/* 31-60 */}
-          <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-              <span className="font-bold text-blue-800 dark:text-blue-300 flex items-center space-x-1.5">
-                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>31 - 60 วัน (ติดตาม)</span>
+          <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span className="font-bold text-blue-900 dark:text-blue-300 flex items-center space-x-1.5">
+                  <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>31 - 60 วัน (ติดตาม)</span>
+                </span>
+              </div>
+              <div className="text-xl font-black text-blue-950 dark:text-blue-100 mt-1 truncate font-mono">
+                ฿{total31_60 > 0 ? total31_60.toLocaleString() : '11,800'}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-100/90 dark:bg-blue-900/60 text-[11px] text-blue-800 dark:text-blue-200 font-bold">
+                แนะนำส่งใบแจ้งเตือนงวดแรก
               </span>
             </div>
-            <div className="text-xl font-black text-blue-900 dark:text-blue-200 mt-1 truncate font-mono">
-              ฿{total31_60 > 0 ? total31_60.toLocaleString() : '11,800'}
-            </div>
-            <span className="text-[11px] text-blue-700/80 dark:text-blue-400/80 mt-1 block font-medium">
-              แนะนำส่งใบแจ้งเตือนงวดแรก
-            </span>
           </div>
 
           {/* 61-90 */}
-          <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-              <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center space-x-1.5">
-                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span>61 - 90 วัน (เตือนภัย)</span>
+          <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span className="font-bold text-amber-900 dark:text-amber-300 flex items-center space-x-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>61 - 90 วัน (เตือนภัย)</span>
+                </span>
+              </div>
+              <div className="text-xl font-black text-amber-800 dark:text-amber-300 mt-1 truncate font-mono">
+                ฿{total61_90 > 0 ? total61_90.toLocaleString() : '4,200'}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-amber-100/90 dark:bg-amber-900/60 text-[11px] text-amber-800 dark:text-amber-200 font-bold">
+                ระงับเปิดบิลใหม่ชั่วคราว
               </span>
             </div>
-            <div className="text-xl font-black text-amber-700 dark:text-amber-400 mt-1 truncate font-mono">
-              ฿{total61_90 > 0 ? total61_90.toLocaleString() : '4,200'}
-            </div>
-            <span className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-1 block font-medium">
-              ระงับเปิดบิลใหม่ชั่วคราว
-            </span>
           </div>
 
           {/* >90 */}
-          <div className="p-4 rounded-xl bg-rose-50/70 dark:bg-rose-950/30">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-              <span className="font-bold text-rose-800 dark:text-rose-300 flex items-center space-x-1.5">
-                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                <span>&gt;90 วัน (เสี่ยงสูง)</span>
+          <div className="p-4 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span className="font-bold text-rose-900 dark:text-rose-300 flex items-center space-x-1.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                  <span>&gt;90 วัน (เสี่ยงสูง)</span>
+                </span>
+              </div>
+              <div className="text-xl font-black text-rose-800 dark:text-rose-300 mt-1 truncate font-mono">
+                ฿{totalOver90 > 0 ? totalOver90.toLocaleString() : '0.00'}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-rose-100/90 dark:bg-rose-900/60 text-[11px] text-rose-800 dark:text-rose-200 font-bold">
+                ส่งฝ่ายกฎหมายพิจารณา
               </span>
             </div>
-            <div className="text-xl font-black text-rose-700 dark:text-rose-400 mt-1 truncate font-mono">
-              ฿{totalOver90 > 0 ? totalOver90.toLocaleString() : '0.00'}
-            </div>
-            <span className="text-[11px] text-rose-700/80 dark:text-rose-400/80 mt-1 block font-medium">
-              ส่งฝ่ายกฎหมายพิจารณา
-            </span>
           </div>
         </div>
 

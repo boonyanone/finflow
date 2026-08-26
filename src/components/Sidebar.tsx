@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Building2,
   Check,
+  PanelLeftClose,
 } from 'lucide-react';
 import { CompanyWorkspace, FeatureToggles, UserProfile, UserRole } from '../types';
 
@@ -27,6 +28,7 @@ interface SidebarProps {
   features: FeatureToggles;
   onOpenUpload: () => void;
   isOpen?: boolean;
+  onToggleSidebar?: () => void;
   onCloseMobile?: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
@@ -45,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   features,
   onOpenUpload,
   isOpen = true,
+  onToggleSidebar,
   onCloseMobile,
   theme = 'light',
   onToggleTheme,
@@ -99,33 +102,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="flex-1 flex flex-col min-h-0">
           {/* Sidebar Header & Brand Logo */}
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0">
-            <div className="flex items-center space-x-3 overflow-hidden">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-md shadow-blue-500/20">
-                <BarChart3 className="w-5 h-5 text-white" />
+          <div className="h-16 px-4 border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between shrink-0">
+            <div className="flex items-center space-x-2.5 overflow-hidden min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shrink-0 shadow-sm shadow-blue-500/20">
+                <BarChart3 className="w-4 h-4 text-white" />
               </div>
               <div className="truncate">
-                <div className="font-black text-sm text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                <div className="font-black text-sm text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 leading-none">
                   <span>FinFlow</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold">
                     BI
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
                   Financial Treasury Suite
                 </div>
               </div>
             </div>
 
-            {/* Mobile close button */}
-            {onCloseMobile && (
-              <button
-                onClick={onCloseMobile}
-                className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
+            {/* Actions: Collapse button for desktop and Close button for mobile */}
+            <div className="flex items-center space-x-1 shrink-0">
+              {onToggleSidebar && (
+                <button
+                  onClick={onToggleSidebar}
+                  title="ยุบแถบเมนู (Collapse Sidebar)"
+                  className="hidden lg:flex p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition cursor-pointer"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              )}
+              {onCloseMobile && (
+                <button
+                  onClick={onCloseMobile}
+                  title="ปิดเมนู"
+                  className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Workspace Switcher */}

@@ -16,7 +16,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
       {/* 1. Inventory Summary Scorecards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Total Valuation */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
               <span className="font-semibold uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400">
@@ -30,13 +30,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
               ฿{totalValuation.toLocaleString()}
             </div>
           </div>
-          <div className="mt-3 flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium">
-            <span>มูลค่าต้นทุนสินค้าคงเหลือรวม</span>
+          <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-100/90 dark:bg-blue-900/60 text-xs font-semibold text-blue-800 dark:text-blue-200">
+              มูลค่าต้นทุนสินค้าคงเหลือรวม
+            </span>
           </div>
         </div>
 
         {/* Total SKUs */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
               <span className="font-semibold uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400">
@@ -50,13 +52,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
               {inventory.length} <span className="text-xs font-semibold text-slate-400">SKUs</span>
             </div>
           </div>
-          <div className="mt-3 flex items-center text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-            <span>เชื่อมต่อกับ Sage 50 ERP Live</span>
+          <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-indigo-100/90 dark:bg-indigo-900/60 text-xs font-semibold text-indigo-800 dark:text-indigo-200">
+              เชื่อมต่อกับ Sage 50 ERP Live
+            </span>
           </div>
         </div>
 
         {/* Critical Low Stock */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
               <span className="font-semibold uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400">
@@ -70,13 +74,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
               {criticalItems.length} <span className="text-xs font-semibold text-rose-500">รายการวิกฤต</span>
             </div>
           </div>
-          <div className="mt-3 flex items-center text-xs text-rose-600 dark:text-rose-400 font-medium">
-            <span>ต่ำกว่าเกณฑ์ Reorder Point</span>
+          <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-rose-100/90 dark:bg-rose-900/60 text-xs font-semibold text-rose-800 dark:text-rose-200">
+              ต่ำกว่าเกณฑ์ Reorder Point
+            </span>
           </div>
         </div>
 
         {/* Healthy Items */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
               <span className="font-semibold uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400">
@@ -90,8 +96,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
               {((healthyItems.length / (inventory.length || 1)) * 100).toFixed(0)}%
             </div>
           </div>
-          <div className="mt-3 flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-            <span>สต็อกอยู่ในเกณฑ์ปลอดภัย {healthyItems.length}/{inventory.length} รายการ</span>
+          <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-100/90 dark:bg-emerald-900/60 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+              สต็อกอยู่ในเกณฑ์ปลอดภัย {healthyItems.length}/{inventory.length} รายการ
+            </span>
           </div>
         </div>
       </div>

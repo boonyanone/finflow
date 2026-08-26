@@ -4,9 +4,18 @@ import {
   FileUp,
   Download,
   Menu,
+  PanelLeftOpen,
   Search,
   ChevronDown,
   Printer,
+  LayoutDashboard,
+  Clock,
+  Boxes,
+  GitMerge,
+  Sliders,
+  FileSpreadsheet,
+  Database,
+  Shield,
 } from 'lucide-react';
 import { FeatureToggles } from '../types';
 
@@ -19,6 +28,7 @@ interface HeaderProps {
   onOpenCopilot: () => void;
   onOpenUpload: () => void;
   features: FeatureToggles;
+  isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
 }
 
@@ -28,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCopilot,
   onOpenUpload,
   features,
+  isSidebarOpen = true,
   onToggleSidebar,
 }) => {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -43,55 +54,72 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getBreadcrumbTitle = () => {
-    if (lang === 'en') {
-      switch (activeTab) {
-        case 'dashboard':
-          return 'Sales & Margin Hub';
-        case 'ar-aging':
-          return 'A/R Aging & Collection';
-        case 'inventory':
-          return 'Inventory Valuation';
-        case 'field-mapping':
-          return 'Custom Field Mapping';
-        case 'report-studio':
-          return 'Report Studio';
-        case 'standard-reports':
-          return 'Standard Reports';
-        case 'data-hub':
-          return 'Import Sage Excel';
-        case 'odbc-sync':
-          return 'ODBC Direct Sync';
-        case 'settings':
-          return 'System Settings & Roles';
-        default:
-          return 'Sales & Margin Hub';
-      }
-    }
-
+  const getViewDetails = () => {
     switch (activeTab) {
       case 'dashboard':
-        return 'Sales & Margin Hub (ยอดขายและกำไร)';
+        return {
+          title: lang === 'en' ? 'Sales & Margin Hub' : 'Sales & Margin Hub (ยอดขายและกำไร)',
+          category: 'Financial Analytics',
+          icon: <LayoutDashboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'ar-aging':
-        return 'A/R Aging (วิเคราะห์ลูกหนี้)';
+        return {
+          title: lang === 'en' ? 'A/R Aging & Collections' : 'A/R Aging (วิเคราะห์ลูกหนี้)',
+          category: 'Accounts Receivable',
+          icon: <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'inventory':
-        return 'Inventory Valuation (มูลค่าสินค้าคงคลัง)';
+        return {
+          title: lang === 'en' ? 'Inventory Valuation' : 'Inventory Valuation (มูลค่าสินค้าคงคลัง)',
+          category: 'Stock & COGS',
+          icon: <Boxes className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'field-mapping':
-        return 'Custom Field Mapping (จับคู่ฟิลด์)';
+        return {
+          title: lang === 'en' ? 'Custom Field Mapping' : 'Custom Field Mapping (จับคู่ฟิลด์)',
+          category: 'Data Pipeline',
+          icon: <GitMerge className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'report-studio':
-        return 'Report Studio (สร้างรายงาน)';
+        return {
+          title: lang === 'en' ? 'Report Studio' : 'Report Studio (สร้างรายงาน)',
+          category: 'Self-Service BI',
+          icon: <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'standard-reports':
-        return 'Standard Reports (รายงานมาตรฐาน)';
+        return {
+          title: lang === 'en' ? 'Standard Reports' : 'Standard Reports (รายงานมาตรฐาน)',
+          category: 'Executive Reports',
+          icon: <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'data-hub':
-        return 'Import Sage Excel (นำเข้าไฟล์)';
+        return {
+          title: lang === 'en' ? 'Import Sage Excel' : 'Import Sage Excel (นำเข้าไฟล์)',
+          category: 'ETL Pipeline',
+          icon: <FileUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'odbc-sync':
-        return 'ODBC Direct Sync (เชื่อมต่อฐานข้อมูล)';
+        return {
+          title: lang === 'en' ? 'ODBC Direct Sync' : 'ODBC Direct Sync (เชื่อมต่อฐานข้อมูล)',
+          category: 'Live Gateway',
+          icon: <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       case 'settings':
-        return 'System Settings (ตั้งค่าระบบ & สิทธิ์)';
+        return {
+          title: lang === 'en' ? 'System Settings & Roles' : 'System Settings (ตั้งค่าระบบ & สิทธิ์)',
+          category: 'Administration',
+          icon: <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
       default:
-        return 'Sales & Margin Hub (ยอดขายและกำไร)';
+        return {
+          title: 'Sales & Margin Hub',
+          category: 'Financial Analytics',
+          icon: <LayoutDashboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
     }
   };
+
+  const currentView = getViewDetails();
 
   const handleExportCsv = () => {
     const csvContent =
@@ -122,23 +150,39 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 bg-white dark:bg-[#0f172a] border-b border-slate-200/90 dark:border-slate-800 px-3 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-20 transition-colors gap-2 min-w-0">
-      {/* Left Breadcrumb & Sidebar Toggle */}
-      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 shrink">
-        {onToggleSidebar && (
+      {/* Left Active View Info & Mobile/Collapsed Sidebar Toggle */}
+      <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 shrink">
+        {onToggleSidebar && (!isSidebarOpen ? (
           <button
             onClick={onToggleSidebar}
-            aria-label="Toggle navigation menu"
-            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer"
+            aria-label="Open navigation menu"
+            title="ขยายเมนู (Expand Sidebar)"
+            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+          >
+            <PanelLeftOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </button>
+        ) : (
+          <button
+            onClick={onToggleSidebar}
+            aria-label="Toggle navigation menu on mobile"
+            className="lg:hidden text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer"
           >
             <Menu className="w-5 h-5" />
           </button>
-        )}
-        <div className="flex items-center space-x-1.5 text-xs text-slate-400 dark:text-slate-500 min-w-0 truncate">
-          <span className="hidden sm:inline shrink-0 font-medium">FinFlow BI</span>
-          <span className="hidden sm:inline shrink-0">/</span>
-          <span className="text-slate-900 dark:text-white font-bold truncate max-w-[160px] sm:max-w-[240px] md:max-w-[360px]" id="currentBreadcrumb">
-            {getBreadcrumbTitle()}
-          </span>
+        ))}
+
+        <div className="flex items-center space-x-2 min-w-0 truncate">
+          <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
+            {currentView.icon}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xs sm:text-sm text-slate-900 dark:text-white font-bold truncate leading-none" id="currentBreadcrumb">
+              {currentView.title}
+            </h1>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+              {currentView.category}
+            </div>
+          </div>
         </div>
       </div>
 
