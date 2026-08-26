@@ -1,0 +1,6 @@
+{
+  "name": "FinFlow - Financial BI & Business Intelligence Platform",
+  "description": "FinFlow — Financial BI & AI Analytics Platform for Thai accounting systems (Express, Peak, FlowAccount, Sage 50, etc.) with real-time sales, margin, AR aging, inventory health, and AI Copilot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

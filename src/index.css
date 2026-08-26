@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Modern Flat Minimalist Theme */
+*, ::before, ::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+/* Custom smooth scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+
+/* Clean Canvas Background Variables */
+:root {
+  --canvas-bg: #f8fafc;
+  --card-bg: #ffffff;
+}
+
+.dark {
+  --canvas-bg: #090d16;
+  --card-bg: #0f172a;
+}
