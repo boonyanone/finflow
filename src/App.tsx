@@ -248,7 +248,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="h-screen flex overflow-hidden bg-white dark:bg-[#0b101d] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* 1. Left Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
@@ -270,8 +270,8 @@ export const App: React.FC = () => {
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        {/* Top Header */}
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-white dark:bg-[#0b101d]">
+        {/* Top Header - Seamless with main canvas */}
         <Header
           activeTab={activeTab}
           theme={theme}
@@ -286,7 +286,7 @@ export const App: React.FC = () => {
         />
 
         {/* Scrollable Main Body */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 space-y-6 custom-scrollbar bg-slate-50 dark:bg-[#0b0f19] w-full min-w-0">
+        <main className="flex-1 overflow-y-auto px-3 sm:px-5 md:px-7 pb-8 pt-1 space-y-5 custom-scrollbar w-full min-w-0">
           {activeTab === 'dashboard' && (
             <DashboardView
               invoices={invoices}

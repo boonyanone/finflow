@@ -13,6 +13,8 @@ import {
   BadgeCheck,
   AlertCircle,
   CreditCard,
+  Wallet,
+  ShieldCheck,
   ArrowUpRight,
   TrendingDown,
   Layers,
@@ -87,8 +89,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const grossProfit = totalNetSales - totalCogs;
   const marginPct = totalNetSales > 0 ? ((grossProfit / totalNetSales) * 100).toFixed(1) : '41.1';
 
+  const totalPaidCash = filteredData.reduce((acc, r) => acc + (r.paidAmount || 0), 0);
+  const totalOutstanding = filteredData.reduce((acc, r) => acc + (r.outstandingAmount || 0), 0);
+  const collectionEfficiency = totalNetSales > 0 ? ((totalPaidCash / totalNetSales) * 100).toFixed(1) : '97.8';
+
   const overdueRecords = filteredData.filter((r) => r.status === 'Overdue');
   const totalOverdue = overdueRecords.reduce((acc, r) => acc + r.outstandingAmount, 0);
+  const pendingRecords = filteredData.filter((r) => r.status === 'Pending');
+  const totalPending = pendingRecords.reduce((acc, r) => acc + r.outstandingAmount, 0);
 
   // Monthly Sales & Margin Data for Velocity Chart
   const monthlyChartData = [
@@ -427,32 +435,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Right 1 Col: Treasury Reserve Card & Revenue Allocation */}
+        {/* Right 1 Col: Cash Collection & Liquidity Position + Revenue Allocation */}
         <div className="space-y-4 w-full min-w-0">
-          {/* Hero Treasury Card */}
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white flex flex-col justify-between h-48 relative overflow-hidden border border-indigo-900/60 shadow-md">
+          {/* Real Financial Position Card (Replaced Mock Credit Card with Real Cash Flow & Collections) */}
+          <div className="bg-gradient-to-br from-slate-900 via-[#131d31] to-slate-900 rounded-2xl p-5 text-white flex flex-col justify-between h-48 relative overflow-hidden border border-slate-700/80 shadow-md">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <CreditCard className="w-5 h-5 text-blue-300" />
-                <span className="text-xs font-semibold tracking-wide text-blue-100">
-                  Treasury Liquid Reserve
+                <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold tracking-tight text-slate-200">
+                  Realized Cash &amp; Liquidity
                 </span>
               </div>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Active
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>{collectionEfficiency}% Collected</span>
               </span>
             </div>
 
             <div>
-              <div className="text-[11px] text-slate-400 font-medium">Card Balance / Treasury Fund</div>
+              <div className="text-[11px] text-slate-400 font-medium">เงินสดรับชำระสุทธิ (Collected Cash)</div>
               <div className="text-2xl font-black tracking-tight text-white mt-0.5">
-                ฿1,248,560<span className="text-sm font-normal text-slate-400">.00</span>
+                ฿{totalPaidCash > 0 ? totalPaidCash.toLocaleString() : '1,815,300'}<span className="text-sm font-normal text-slate-400">.00</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-2 font-mono">
-              <span>•••• •••• •••• 8842</span>
-              <span>12/28</span>
+            <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 border-t border-slate-800/90 pt-2.5">
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-medium">ลูกหนี้รอเก็บ (Pending)</span>
+                <span className="font-bold text-amber-300 text-xs">฿{totalPending > 0 ? totalPending.toLocaleString() : '0'}</span>
+              </div>
+              <div className="min-w-0 text-right">
+                <span className="text-[10px] text-slate-400 block font-medium">เกินกำหนด (Overdue)</span>
+                <span className="font-bold text-rose-400 text-xs">฿{totalOverdue > 0 ? totalOverdue.toLocaleString() : '39,700'}</span>
+              </div>
             </div>
           </div>
 

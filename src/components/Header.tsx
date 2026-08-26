@@ -149,7 +149,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-[#0f172a] border-b border-slate-200/90 dark:border-slate-800 px-3 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-20 transition-colors gap-2 min-w-0">
+    <header className="h-16 bg-transparent px-3 sm:px-5 md:px-7 flex items-center justify-between shrink-0 z-20 transition-colors gap-2 min-w-0">
       {/* Left Active View Info & Mobile/Collapsed Sidebar Toggle */}
       <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 shrink">
         {onToggleSidebar && (!isSidebarOpen ? (
@@ -157,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onToggleSidebar}
             aria-label="Open navigation menu"
             title="ขยายเมนู (Expand Sidebar)"
-            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl bg-white dark:bg-slate-800/80 shadow-2xs border border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 transition shrink-0 cursor-pointer"
           >
             <PanelLeftOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </button>
@@ -165,21 +165,21 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleSidebar}
             aria-label="Toggle navigation menu on mobile"
-            className="lg:hidden text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer"
+            className="lg:hidden text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl bg-white dark:bg-slate-800/80 shadow-2xs border border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 transition shrink-0 cursor-pointer"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4" />
           </button>
         ))}
 
-        <div className="flex items-center space-x-2 min-w-0 truncate">
-          <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
+        <div className="flex items-center space-x-2.5 min-w-0 truncate">
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800/80 shadow-2xs border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-center shrink-0">
             {currentView.icon}
           </div>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm text-slate-900 dark:text-white font-bold truncate leading-none" id="currentBreadcrumb">
+            <h1 className="text-sm sm:text-base text-slate-900 dark:text-white font-bold truncate leading-tight tracking-tight" id="currentBreadcrumb">
               {currentView.title}
             </h1>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+            <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">
               {currentView.category}
             </div>
           </div>
@@ -189,13 +189,13 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right Controls: Clean, spacious, and uncluttered */}
       <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
         {/* Global Search */}
-        <div className="relative hidden xl:block w-48">
+        <div className="relative hidden xl:block w-52">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             id="headerGlobalSearch"
             placeholder={lang === 'th' ? 'ค้นหาข้อมูล...' : 'Search records...'}
-            className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition"
+            className="w-full bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/70 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-2xs transition"
           />
         </div>
 
@@ -205,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
             id="btnHeaderCopilot"
             onClick={onOpenCopilot}
             title="Open AI Copilot"
-            className="flex items-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-sm shadow-blue-500/20"
+            className="flex items-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-xs shadow-blue-500/20"
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-100" />
             <span className="hidden sm:inline">AI Copilot</span>
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onOpenUpload}
           title="Upload Sage File"
-          className="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shrink-0"
+          className="flex items-center space-x-1.5 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer shrink-0"
         >
           <FileUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           <span className="hidden md:inline">Import Sage</span>
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => setShowExportDropdown(!showExportDropdown)}
             title="Export Report"
-            className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
+            className="flex items-center space-x-1 sm:space-x-1.5 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden sm:inline">Export</span>

@@ -19,6 +19,7 @@ import {
   Building2,
   Check,
   PanelLeftClose,
+  ChevronDown,
 } from 'lucide-react';
 import { CompanyWorkspace, FeatureToggles, UserProfile, UserRole } from '../types';
 
@@ -96,25 +97,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <aside
         id="mainSidebar"
-        className={`fixed lg:static top-0 bottom-0 left-0 w-64 bg-white dark:bg-[#0f172a] border-r border-slate-200/80 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 z-40 shrink-0 select-none ${
+        className={`fixed lg:static top-0 bottom-0 left-0 w-64 bg-[#edf1f7] dark:bg-[#090e1a] border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between transition-transform duration-300 z-40 shrink-0 select-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:-ml-64'
         }`}
       >
         <div className="flex-1 flex flex-col min-h-0">
           {/* Sidebar Header & Brand Logo */}
-          <div className="h-16 px-4 border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="h-16 px-4 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-2.5 overflow-hidden min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shrink-0 shadow-sm shadow-blue-500/20">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shrink-0 shadow-xs shadow-blue-500/20">
                 <BarChart3 className="w-4 h-4 text-white" />
               </div>
               <div className="truncate">
                 <div className="font-black text-sm text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 leading-none">
                   <span>FinFlow</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 font-bold">
                     BI
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                   Financial Treasury Suite
                 </div>
               </div>
@@ -126,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={onToggleSidebar}
                   title="ยุบแถบเมนู (Collapse Sidebar)"
-                  className="hidden lg:flex p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition cursor-pointer"
+                  className="hidden lg:flex p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   <PanelLeftClose className="w-4 h-4" />
                 </button>
@@ -135,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={onCloseMobile}
                   title="ปิดเมนู"
-                  className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  className="lg:hidden p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -144,26 +145,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Workspace Switcher */}
-          <div className="p-3 shrink-0 relative" ref={companyRef}>
+          <div className="px-3 pb-2 shrink-0 relative" ref={companyRef}>
             <button
               onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800 text-left px-3 py-2 rounded-xl flex items-center justify-between transition text-xs cursor-pointer border border-slate-200/60 dark:border-slate-700/60"
+              className="w-full bg-white dark:bg-[#151e30] hover:bg-slate-50 dark:hover:bg-slate-800 text-left px-3 py-2.5 rounded-xl flex items-center justify-between transition text-xs cursor-pointer border border-slate-200/90 dark:border-slate-700/70 shadow-xs"
             >
               <div className="flex items-center space-x-2 truncate">
-                <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
                   {currentCompany?.name ? currentCompany.name.charAt(0) : 'S'}
                 </div>
                 <div className="truncate">
                   <div className="font-bold text-slate-800 dark:text-slate-200 truncate text-[11px]">
                     {currentCompany?.name || 'บจก. สยาม คูลลิ่ง แอนด์ อินซูเลชั่น พาเนล'}
                   </div>
-                  <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0"></span>
-                    <span>Sage 50 Connected</span>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+                    <span>Sage 50 Direct Sync</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                   </div>
                 </div>
               </div>
-              <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
             </button>
 
             {/* Company Dropdown */}
@@ -202,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <nav className="flex-1 px-3 space-y-4 overflow-y-auto custom-scrollbar">
             {/* Analytics Section */}
             <div>
-              <div className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
+              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                 Financial Reports
               </div>
               <div className="space-y-1">
@@ -212,13 +213,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectTab('dashboard');
                     if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                   }}
-                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                     activeTab === 'dashboard'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                      : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <LayoutDashboard className={`w-4 h-4 ${activeTab === 'dashboard' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <LayoutDashboard className={`w-4 h-4 ${activeTab === 'dashboard' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                   <span>Sales & Margin Hub</span>
                 </button>
 
@@ -230,13 +231,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onSelectTab('ar-aging');
                       if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                     }}
-                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                       activeTab === 'ar-aging'
-                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                        : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <Clock className={`w-4 h-4 ${activeTab === 'ar-aging' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                    <Clock className={`w-4 h-4 ${activeTab === 'ar-aging' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span>A/R Aging (วิเคราะห์ลูกหนี้)</span>
                   </button>
                 )}
@@ -249,13 +250,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onSelectTab('inventory');
                       if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                     }}
-                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                       activeTab === 'inventory'
-                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                        : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <Boxes className={`w-4 h-4 ${activeTab === 'inventory' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                    <Boxes className={`w-4 h-4 ${activeTab === 'inventory' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span>Inventory Valuation</span>
                   </button>
                 )}
@@ -266,13 +267,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectTab('field-mapping');
                     if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                   }}
-                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                     activeTab === 'field-mapping'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                      : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <GitMerge className={`w-4 h-4 ${activeTab === 'field-mapping' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <GitMerge className={`w-4 h-4 ${activeTab === 'field-mapping' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                   <span>Custom Field Mapping</span>
                 </button>
 
@@ -283,13 +284,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onSelectTab('report-studio');
                       if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                     }}
-                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                       activeTab === 'report-studio'
-                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                        : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <FileSpreadsheet className={`w-4 h-4 ${activeTab === 'report-studio' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                    <FileSpreadsheet className={`w-4 h-4 ${activeTab === 'report-studio' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span>Report Studio</span>
                   </button>
                 )}
@@ -298,7 +299,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Data & Automation Section */}
             <div>
-              <div className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
+              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                 Data Operations
               </div>
               <div className="space-y-1">
@@ -307,13 +308,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectTab('data-hub');
                     if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                   }}
-                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                     activeTab === 'data-hub'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                      : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <UploadCloud className={`w-4 h-4 ${activeTab === 'data-hub' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <UploadCloud className={`w-4 h-4 ${activeTab === 'data-hub' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                   <span>Import Sage Excel</span>
                 </button>
 
@@ -324,13 +325,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onSelectTab('odbc-sync');
                       if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                     }}
-                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                       activeTab === 'odbc-sync'
-                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                        : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <Database className={`w-4 h-4 ${activeTab === 'odbc-sync' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                    <Database className={`w-4 h-4 ${activeTab === 'odbc-sync' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span>ODBC Direct Sync</span>
                   </button>
                 )}
@@ -339,7 +340,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Administration & Settings */}
             <div>
-              <div className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
+              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                 Administration
               </div>
               <div className="space-y-1">
@@ -348,13 +349,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectTab('settings');
                     if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                   }}
-                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
                     activeTab === 'settings'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                      : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <Sliders className={`w-4 h-4 ${activeTab === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <Sliders className={`w-4 h-4 ${activeTab === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                   <span>ตั้งค่าโมดูล (Settings)</span>
                 </button>
               </div>
@@ -474,17 +475,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             id="btnProfileMenu"
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800 transition cursor-pointer text-left"
+            className="w-full flex items-center justify-between p-2 rounded-xl bg-white dark:bg-[#151e30] hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer text-left border border-slate-200/90 dark:border-slate-700/70 shadow-xs"
           >
             <div className="flex items-center space-x-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm shadow-blue-500/20">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs shadow-blue-500/20">
                 {currentUser.avatarInitials || 'PL'}
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                   {currentUser.name}
                 </div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                   {currentUser.department}
                 </div>
               </div>
