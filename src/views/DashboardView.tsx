@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Banknote,
   TrendingUp,
@@ -20,6 +20,16 @@ import {
   Layers,
   Sparkles,
   Lock,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Check,
+  FileText,
+  CheckCheck,
+  Receipt,
+  BookOpen,
+  CalendarDays,
+  Percent,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -56,7 +66,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   aiLoading,
   onOpenCopilot,
   onDrillDown,
+  onOpenDebtDraft,
 }) => {
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+  const [copiedInvoiceNo, setCopiedInvoiceNo] = useState<string | null>(null);
+
+  const handleCopyInvoice = (invNo: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard?.writeText(invNo);
+    setCopiedInvoiceNo(invNo);
+    setTimeout(() => setCopiedInvoiceNo(null), 2000);
+  };
+
+  const toggleExpand = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setExpandedInvoiceId((prev) => (prev === id ? null : id));
+  };
   // Security Masking: Sales Rep sees only their accounts & hidden cost/margin
   const isSalesRep = user.role === 'sales_rep';
   const accessibleInvoices =
@@ -619,9 +644,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div className="overflow-x-auto custom-scrollbar w-full min-w-0 rounded-xl border border-slate-200/80 dark:border-slate-800/80">
-          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[700px]">
+          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[750px]">
             <thead className="bg-slate-50/90 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] font-bold border-b border-slate-200 dark:border-slate-700">
               <tr>
+                <th className="py-3 px-3 w-8 text-center"></th>
                 <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Invoice No</th>
                 <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Date</th>
                 <th className="py-3 px-3.5 sm:px-4 whitespace-nowrap">Customer Name</th>
@@ -636,7 +662,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-transparent">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={isSalesRep ? 8 : 9} className="text-center py-8 text-slate-400">
+                  <td colSpan={isSalesRep ? 9 : 10} className="text-center py-8 text-slate-400">
                     ไม่พบรายการที่ตรงกับเงื่อนไขตัวกรอง
                   </td>
                 </tr>
@@ -653,46 +679,298 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     .join('')
                     .toUpperCase();
 
+                  const isExpanded = expandedInvoiceId === r.id;
+
                   return (
-                    <tr
-                      key={r.id}
-                      onClick={() =>
-                        onDrillDown(`รายละเอียดบิล ${r.invoiceNo}`, `ลูกค้า: ${r.customerName} | พนักงานขาย: ${r.salesRep}`, [r])
-                      }
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition cursor-pointer"
-                    >
-                      <td className="py-3 px-3.5 sm:px-4 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">{r.invoiceNo}</td>
-                      <td className="py-3 px-3.5 sm:px-4 text-slate-400 whitespace-nowrap">{r.date}</td>
-                      <td className="py-3 px-3.5 sm:px-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0">
-                            {initials}
-                          </div>
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">{r.customerName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3.5 sm:px-4 text-slate-600 dark:text-slate-300">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mr-1.5 whitespace-nowrap border border-slate-200/60 dark:border-slate-700/60">
-                          {r.category}
-                        </span>
-                        <span>{r.itemDescription}</span>
-                      </td>
-                      <td className="py-3 px-3.5 sm:px-4 text-center text-slate-500 whitespace-nowrap">{r.salesRep}</td>
-                      <td className="py-3 px-3.5 sm:px-4 text-right font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">{r.quantity}</td>
-                      <td className="py-3 px-3.5 sm:px-4 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap font-mono">
-                        ฿{r.netAmount.toLocaleString()}
-                      </td>
-                      {!isSalesRep && (
-                        <td className="py-3 px-3.5 sm:px-4 text-right font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                          {r.marginPct}%
+                    <React.Fragment key={r.id}>
+                      <tr
+                        onClick={() => toggleExpand(r.id)}
+                        className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition cursor-pointer ${
+                          isExpanded ? 'bg-indigo-50/30 dark:bg-indigo-950/20' : ''
+                        }`}
+                      >
+                        {/* Expand Toggle Button */}
+                        <td className="py-3 px-2 text-center" onClick={(e) => toggleExpand(r.id, e)}>
+                          <button
+                            type="button"
+                            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                            title="คลี่ดูรายละเอียดทางบัญชีและการชำระเงิน"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
                         </td>
+
+                        {/* Invoice No */}
+                        <td className="py-3 px-3.5 sm:px-4 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                          {r.invoiceNo}
+                        </td>
+
+                        {/* Date */}
+                        <td className="py-3 px-3.5 sm:px-4 text-slate-400 whitespace-nowrap">{r.date}</td>
+
+                        {/* Customer */}
+                        <td className="py-3 px-3.5 sm:px-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0">
+                              {initials}
+                            </div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{r.customerName}</span>
+                          </div>
+                        </td>
+
+                        {/* Category & Item */}
+                        <td className="py-3 px-3.5 sm:px-4 text-slate-600 dark:text-slate-300">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mr-1.5 whitespace-nowrap border border-slate-200/60 dark:border-slate-700/60">
+                            {r.category}
+                          </span>
+                          <span>{r.itemDescription}</span>
+                        </td>
+
+                        {/* Sales Rep */}
+                        <td className="py-3 px-3.5 sm:px-4 text-center text-slate-500 whitespace-nowrap">{r.salesRep}</td>
+
+                        {/* Qty */}
+                        <td className="py-3 px-3.5 sm:px-4 text-right font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                          {r.quantity}
+                        </td>
+
+                        {/* Net Amount */}
+                        <td className="py-3 px-3.5 sm:px-4 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap font-mono">
+                          ฿{r.netAmount.toLocaleString()}
+                        </td>
+
+                        {/* Margin % */}
+                        {!isSalesRep && (
+                          <td className="py-3 px-3.5 sm:px-4 text-right font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-mono">
+                            {r.marginPct}%
+                          </td>
+                        )}
+
+                        {/* Status */}
+                        <td className="py-3 px-3.5 sm:px-4 text-center whitespace-nowrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badge}`}>
+                            {r.status === 'Paid' ? 'Settled' : r.status}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Accounting & Transaction Detail Sub-Panel */}
+                      {isExpanded && (
+                        <tr className="bg-slate-50/70 dark:bg-slate-900/40">
+                          <td colSpan={isSalesRep ? 9 : 10} className="p-3 sm:p-4">
+                            <div className="bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 space-y-4 shadow-xs">
+                              {/* Sub-panel Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700/70 pb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                    <Receipt className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center space-x-2">
+                                      <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                                        ใบแจ้งหนี้ / ใบกำกับภาษี: {r.invoiceNo}
+                                      </h4>
+                                      <button
+                                        onClick={(e) => handleCopyInvoice(r.invoiceNo, e)}
+                                        className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                                        title="คัดลอกเลขที่บิล"
+                                      >
+                                        {copiedInvoiceNo === r.invoiceNo ? (
+                                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                        ) : (
+                                          <Copy className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                      ลูกค้า: <strong>{r.customerName}</strong> ({r.customerId}) | วันที่ออกเอกสาร: {r.date} | วันครบกำหนด: {r.dueDate}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Quick Action Buttons */}
+                                <div className="flex items-center flex-wrap gap-2 shrink-0">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDrillDown(
+                                        `รายละเอียดบิล ${r.invoiceNo}`,
+                                        `ลูกค้า: ${r.customerName} | พนักงานขาย: ${r.salesRep}`,
+                                        [r]
+                                      );
+                                    }}
+                                    className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition cursor-pointer"
+                                  >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>เปิดหน้าต่างเจาะลึก</span>
+                                  </button>
+
+                                  {(r.status === 'Overdue' || r.status === 'Pending') && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenDebtDraft(
+                                          r.customerName,
+                                          r.invoiceNo,
+                                          r.outstandingAmount,
+                                          r.overdueDays
+                                        );
+                                      }}
+                                      className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 hover:bg-amber-100 transition cursor-pointer"
+                                    >
+                                      <Bot className="w-3.5 h-3.5 text-amber-600" />
+                                      <span>ร่างหนังสือทวงถาม AI</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 4 Financial & Accounting Cards */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                {/* Card 1: Pricing & Line Item Breakdown */}
+                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1.5">
+                                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                                    <Receipt className="w-3 h-3 text-blue-500" />
+                                    <span>โครงสร้างราคา &amp; ภาษี</span>
+                                  </span>
+                                  <div className="text-xs space-y-1 pt-1 font-mono">
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>ราคาต่อหน่วย:</span>
+                                      <span>฿{r.unitPrice.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>จำนวน:</span>
+                                      <span>{r.quantity} หน่วย</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>ยอดก่อนภาษี:</span>
+                                      <span>฿{r.subtotal.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>ภาษีมูลค่าเพิ่ม (VAT 7%):</span>
+                                      <span>฿{r.tax.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold text-slate-900 dark:text-white border-t border-slate-200/80 dark:border-slate-700 pt-1">
+                                      <span>ยอดสุทธิ (Total):</span>
+                                      <span className="text-blue-600 dark:text-blue-400">฿{r.netAmount.toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Card 2: Cost of Goods Sold & Margins (Masked for Sales Rep) */}
+                                {!isSalesRep ? (
+                                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1.5">
+                                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                                      <span>ต้นทุน &amp; กำไรขั้นต้น (Profitability)</span>
+                                    </span>
+                                    <div className="text-xs space-y-1 pt-1 font-mono">
+                                      <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                        <span>ต้นทุนขาย (COGS):</span>
+                                        <span className="text-slate-500">฿{r.cogs.toLocaleString()}</span>
+                                      </div>
+                                      <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                                        <span>กำไรขั้นต้น (Gross Profit):</span>
+                                        <span>฿{r.grossProfit.toLocaleString()}</span>
+                                      </div>
+                                      <div className="flex justify-between font-bold text-emerald-700 dark:text-emerald-300">
+                                        <span>อัตรากำไร (Margin %):</span>
+                                        <span>{r.marginPct}%</span>
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-200/80 dark:border-slate-700">
+                                        คำนวณจากวิธีต้นทุนมาตรฐาน FIFO
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1.5 flex flex-col justify-between">
+                                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                                      <Lock className="w-3 h-3 text-amber-500" />
+                                      <span>ข้อมูลต้นทุน (จำกัดสิทธิ์)</span>
+                                    </span>
+                                    <div className="text-xs text-slate-500 py-2">
+                                      ข้อมูลต้นทุนและอัตรากำไรขั้นต้นถูกสงวนสิทธิ์เฉพาะฝ่ายบริหารและฝ่ายการเงิน
+                                    </div>
+                                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                      Role: Sales Representative
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Card 3: Settlement & Cash Collection Status */}
+                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1.5">
+                                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                                    <Wallet className="w-3 h-3 text-indigo-500" />
+                                    <span>สถานะการชำระเงิน (Settlement)</span>
+                                  </span>
+                                  <div className="text-xs space-y-1 pt-1 font-mono">
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>รับชำระแล้ว (Paid):</span>
+                                      <span className="font-bold text-emerald-600">฿{(r.paidAmount || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>ยอดค้างชำระ (Balance):</span>
+                                      <span className={`font-bold ${r.outstandingAmount > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
+                                        ฿{(r.outstandingAmount || 0).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>วันครบกำหนด (Due):</span>
+                                      <span>{r.dueDate}</span>
+                                    </div>
+                                    <div className="pt-1 border-t border-slate-200/80 dark:border-slate-700 text-[10px]">
+                                      {r.status === 'Overdue' ? (
+                                        <span className="text-rose-600 font-bold">
+                                          ⚠ เกินกำหนด {r.overdueDays} วัน (ติดตามเร่งด่วน)
+                                        </span>
+                                      ) : r.status === 'Pending' ? (
+                                        <span className="text-amber-600 font-medium">
+                                          ⏳ อยู่ในกำหนดเครดิตเทอมปกติ
+                                        </span>
+                                      ) : (
+                                        <span className="text-emerald-600 font-bold">
+                                          ✓ ชำระครบถ้วน ปิดยอดแล้ว
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Card 4: Sage 50 ERP GL Journal Reference */}
+                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-1.5">
+                                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                                    <BookOpen className="w-3 h-3 text-purple-500" />
+                                    <span>บันทึกสมุดรายวัน Sage 50 (GL)</span>
+                                  </span>
+                                  <div className="text-[11px] space-y-1 pt-1 font-mono text-slate-600 dark:text-slate-300">
+                                    <div className="flex justify-between">
+                                      <span>Dr. 11300 ลูกหนี้การค้า</span>
+                                      <span>฿{r.netAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>Cr. 41000 รายได้จากการขาย</span>
+                                      <span>฿{r.subtotal.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>Cr. 21500 ภาษีขาย</span>
+                                      <span>฿{r.tax.toLocaleString()}</span>
+                                    </div>
+                                    <div className="pt-1 border-t border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-[10px] text-slate-400">
+                                      <span>รหัสสินค้า: {r.itemCode}</span>
+                                      <span className="font-bold text-emerald-600">Reconciled ✓</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                      <td className="py-3 px-3.5 sm:px-4 text-center whitespace-nowrap">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badge}`}>
-                          {r.status === 'Paid' ? 'Settled' : r.status}
-                        </span>
-                      </td>
-                    </tr>
+                    </React.Fragment>
                   );
                 })
               )}
