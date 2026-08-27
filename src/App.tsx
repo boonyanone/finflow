@@ -5,6 +5,7 @@ import { AiCopilotDrawer } from './components/AiCopilotDrawer';
 import { UploadModal } from './components/UploadModal';
 import { DrillDownModal } from './components/DrillDownModal';
 import { DebtDraftModal } from './components/DebtDraftModal';
+import { DataHealthModal } from './components/DataHealthModal';
 
 // Views
 import { DashboardView } from './views/DashboardView';
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [isDataHealthOpen, setIsDataHealthOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Companies / Workspaces
@@ -184,7 +186,18 @@ export const App: React.FC = () => {
   };
 
   const handleToggleFeature = (key: keyof FeatureToggles) => {
-    setFeatures((prev) => ({ ...prev, [key]: !prev[key] }));
+    setFeatures((prev) => {
+      const nextVal = !prev[key];
+      // Real-time navigation safety when disabling features
+      if (!nextVal) {
+        if (key === 'arAging' && activeTab === 'ar-aging') setActiveTab('dashboard');
+        if (key === 'inventoryValuation' && activeTab === 'inventory') setActiveTab('dashboard');
+        if (key === 'reportStudio' && activeTab === 'report-studio') setActiveTab('dashboard');
+        if (key === 'odbcSync' && activeTab === 'odbc-sync') setActiveTab('dashboard');
+        if (key === 'aiCopilot') setIsCopilotOpen(false);
+      }
+      return { ...prev, [key]: nextVal };
+    });
   };
 
   const handleRoleChange = (role: UserRole) => {
@@ -280,6 +293,7 @@ export const App: React.FC = () => {
           onToggleLang={() => setLang(lang === 'th' ? 'en' : 'th')}
           onOpenCopilot={() => setIsCopilotOpen(true)}
           onOpenUpload={() => setIsUploadOpen(true)}
+          onOpenDataHealth={() => setIsDataHealthOpen(true)}
           features={features}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -412,6 +426,15 @@ export const App: React.FC = () => {
         amount={debtModal.amount}
         overdueDays={debtModal.overdueDays}
         onShowToast={showToast}
+      />
+
+      {/* 7. Data Health & Integrity Modal (CDM Inspector) */}
+      <DataHealthModal
+        isOpen={isDataHealthOpen}
+        onClose={() => setIsDataHealthOpen(false)}
+        invoices={invoices}
+        customers={customers}
+        inventory={inventory}
       />
 
       {/* Toast Notification Popup */}

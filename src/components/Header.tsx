@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   Database,
   Shield,
+  ShieldCheck,
 } from 'lucide-react';
 import { FeatureToggles } from '../types';
 
@@ -27,6 +28,7 @@ interface HeaderProps {
   onToggleLang?: () => void;
   onOpenCopilot: () => void;
   onOpenUpload: () => void;
+  onOpenDataHealth?: () => void;
   features: FeatureToggles;
   isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
@@ -37,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   lang = 'th',
   onOpenCopilot,
   onOpenUpload,
+  onOpenDataHealth,
   features,
   isSidebarOpen = true,
   onToggleSidebar,
@@ -188,8 +191,22 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls: Clean, spacious, and uncluttered */}
       <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
+        {/* Data Integrity & Health Badge (v3.0 CDM Layer) */}
+        {onOpenDataHealth && (
+          <button
+            onClick={onOpenDataHealth}
+            title="คลิกเพื่อดูรายละเอียดการตรวจสอบคุณภาพข้อมูลและงบทดลอง (Data Quality & Reconciliation Inspector)"
+            className="flex items-center space-x-1.5 bg-emerald-50/90 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition cursor-pointer shrink-0"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline">Data Health:</span>
+            <span className="font-mono">100%</span>
+            <span className="hidden lg:inline font-normal text-[11px] opacity-90">Reconciled</span>
+          </button>
+        )}
+
         {/* Global Search */}
-        <div className="relative hidden xl:block w-52">
+        <div className="relative hidden 2xl:block w-52">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"

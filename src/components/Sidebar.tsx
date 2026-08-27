@@ -201,10 +201,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Navigation Sections */}
           <nav className="flex-1 px-3 space-y-4 overflow-y-auto custom-scrollbar">
-            {/* Analytics Section */}
+            {/* Financial Reports Section */}
             <div>
-              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                Financial Reports
+              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Financial Reports</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">Core</span>
               </div>
               <div className="space-y-1">
                 {/* Sales Hub */}
@@ -261,24 +262,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 )}
 
-                {/* Field Mapping Item */}
+                {/* Standard Reports */}
                 <button
                   onClick={() => {
-                    onSelectTab('field-mapping');
+                    onSelectTab('standard-reports');
                     if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
                   }}
                   className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
-                    activeTab === 'field-mapping'
+                    activeTab === 'standard-reports'
                       ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
                       : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <GitMerge className={`w-4 h-4 ${activeTab === 'field-mapping' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
-                  <span>Custom Field Mapping</span>
+                  <FileSpreadsheet className={`w-4 h-4 ${activeTab === 'standard-reports' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                  <span>รายงานมาตรฐาน (Reports)</span>
                 </button>
+              </div>
+            </div>
 
-                {/* Report Studio */}
-                {features.reportStudio && (
+            {/* Self-Service BI Section */}
+            {features.reportStudio && (
+              <div>
+                <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Self-Service BI</span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">Studio</span>
+                </div>
+                <div className="space-y-1">
                   <button
                     onClick={() => {
                       onSelectTab('report-studio');
@@ -290,17 +299,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <FileSpreadsheet className={`w-4 h-4 ${activeTab === 'report-studio' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
-                    <span>Report Studio</span>
+                    <BarChart3 className={`w-4 h-4 ${activeTab === 'report-studio' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                    <span>Ad-Hoc Report Studio</span>
                   </button>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Data & Automation Section */}
+            {/* Data Operations Section */}
             <div>
-              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                Data Operations
+              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Data Operations</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">ETL/CDM</span>
               </div>
               <div className="space-y-1">
                 <button
@@ -335,13 +345,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span>ODBC Direct Sync</span>
                   </button>
                 )}
+
+                {/* Custom Field Mapping */}
+                <button
+                  onClick={() => {
+                    onSelectTab('field-mapping');
+                    if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
+                  }}
+                  className={`nav-item w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs transition cursor-pointer ${
+                    activeTab === 'field-mapping'
+                      ? 'bg-white dark:bg-[#182338] text-blue-700 dark:text-blue-300 font-bold shadow-xs border border-slate-200/90 dark:border-slate-700/80'
+                      : 'text-slate-600 dark:text-slate-300 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/50'
+                  }`}
+                >
+                  <GitMerge className={`w-4 h-4 ${activeTab === 'field-mapping' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                  <span>Custom Field Mapping</span>
+                </button>
               </div>
             </div>
 
-            {/* Administration & Settings */}
+            {/* Administration & Settings Section */}
             <div>
-              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                Administration
+              <div className="px-3 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Administration</span>
+                <Shield className="w-3 h-3 text-slate-400" />
               </div>
               <div className="space-y-1">
                 <button
@@ -356,7 +383,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Sliders className={`w-4 h-4 ${activeTab === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
-                  <span>ตั้งค่าโมดูล (Settings)</span>
+                  <span>ตั้งค่าโมดูล &amp; สิทธิ์ (Settings)</span>
                 </button>
               </div>
             </div>
