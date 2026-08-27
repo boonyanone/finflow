@@ -22,7 +22,24 @@ import {
   Layers,
   Sparkles,
   Info,
+  BarChart3,
+  PieChart as PieChartIcon,
+  Users,
+  Activity,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  Cell,
+  PieChart,
+  Pie,
+} from 'recharts';
 import { ArAgingBucket, Customer, InvoiceRecord } from '../types';
 
 interface ArAgingViewProps {
@@ -211,6 +228,76 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
 
     return list;
   }, [customerAgingData, searchTerm, selectedRiskFilter, sortBy]);
+
+  // Chart 1: Aging Buckets & ECL Loss Provision Chart Data
+  const agingChartData = useMemo(() => {
+    return [
+      {
+        name: '0-30 วัน (Current)',
+        shortName: '0-30 วัน',
+        amount: total0_30,
+        provision: Math.round(total0_30 * 0.01),
+        rate: '1%',
+        fill: '#10b981',
+      },
+      {
+        name: '31-60 วัน (Overdue)',
+        shortName: '31-60 วัน',
+        amount: total31_60,
+        provision: Math.round(total31_60 * 0.05),
+        rate: '5%',
+        fill: '#3b82f6',
+      },
+      {
+        name: '61-90 วัน (High Risk)',
+        shortName: '61-90 วัน',
+        amount: total61_90,
+        provision: Math.round(total61_90 * 0.25),
+        rate: '25%',
+        fill: '#f59e0b',
+      },
+      {
+        name: '> 90 วัน (Bad Debt)',
+        shortName: '> 90 วัน',
+        amount: totalOver90,
+        provision: Math.round(totalOver90 * 0.60),
+        rate: '60%',
+        fill: '#ef4444',
+      },
+    ];
+  }, [total0_30, total31_60, total61_90, totalOver90]);
+
+  // Chart 2: Top 5 Highest Outstanding Debtors Exposure vs Credit Limit
+  const topDebtorsChartData = useMemo(() => {
+    return [...customerAgingData]
+      .filter((c) => c.totalOutstanding > 0)
+      .sort((a, b) => b.totalOutstanding - a.totalOutstanding)
+      .slice(0, 5)
+      .map((c) => {
+        const overdue = c.aging31_60 + c.aging61_90 + c.over90;
+        const displayName = c.customerName.replace('บจก.', '').replace('จำกัด', '').trim();
+        return {
+          name: displayName.length > 18 ? displayName.substring(0, 16) + '...' : displayName,
+          fullName: c.customerName,
+          customerId: c.customerId,
+          current: c.current0_30,
+          overdue: overdue,
+          totalOutstanding: c.totalOutstanding,
+          creditLimit: c.creditLimit,
+          utilizationPct: c.creditLimit > 0 ? Math.round((c.totalOutstanding / c.creditLimit) * 100) : 0,
+        };
+      });
+  }, [customerAgingData]);
+
+  // Chart 3: Debt Portfolio Quality Donut
+  const debtQualityPieData = useMemo(() => {
+    return [
+      { name: 'อยู่ในกำหนด (Current)', value: total0_30, color: '#10b981' },
+      { name: 'เกิน 31-60 วัน', value: total31_60, color: '#3b82f6' },
+      { name: 'เกิน 61-90 วัน', value: total61_90, color: '#f59e0b' },
+      { name: 'เกิน >90 วัน', value: totalOver90, color: '#ef4444' },
+    ].filter((item) => item.value > 0);
+  }, [total0_30, total31_60, total61_90, totalOver90]);
 
   const toggleExpand = (id: string) => {
     setExpandedCustomerId((prev) => (prev === id ? null : id));
@@ -505,7 +592,179 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
         </div>
       </div>
 
-      {/* 4. Customer Credit Risk & Aging Analysis Table */}
+      {/* 4. Visual Credit & Aging Intelligence (Charts for Instant Executive Decision) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Chart 1: Aging Buckets & ECL Provision Breakdown */}
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>การกระจายตัวของอายุหนี้และการตั้งสำรอง (Aging &amp; ECL Provision)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                เปรียบเทียบยอดหนี้ค้างชำระกับค่าเผื่อหนี้สงสัยจะสูญตามเกณฑ์ TFRS 9 (1%, 5%, 25%, 60%)
+              </p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 shrink-0 self-start sm:self-auto">
+              Total ฿{grandTotalAR.toLocaleString()}
+            </span>
+          </div>
+
+          <div className="h-64 w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agingChartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#33415520" />
+                <XAxis
+                  dataKey="shortName"
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(val) => `฿${(val / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  formatter={(value: any, name: any) => [
+                    `฿${Number(value).toLocaleString()}`,
+                    name === 'amount' ? 'ยอดลูกหนี้รวม' : 'สำรองหนี้สูญ (ECL)',
+                  ]}
+                  labelFormatter={(label) => `ช่วงอายุหนี้: ${label}`}
+                  contentStyle={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: '#334155',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
+                  formatter={(value) => (value === 'amount' ? 'ยอดลูกหนี้คงเหลือ' : 'สำรองเผื่อหนี้สูญ (ECL)')}
+                />
+                <Bar dataKey="amount" fill="#3b82f6" radius={[6, 6, 0, 0]} name="amount">
+                  {agingChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+                <Bar dataKey="provision" fill="#ef4444" radius={[6, 6, 0, 0]} name="provision" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-center">
+            <div>
+              <span className="text-slate-400 block text-[10px]">0-30 วัน</span>
+              <strong className="text-emerald-600 font-mono">฿{total0_30.toLocaleString()}</strong>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px]">31-60 วัน</span>
+              <strong className="text-blue-600 font-mono">฿{total31_60.toLocaleString()}</strong>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px]">61-90 วัน</span>
+              <strong className="text-amber-600 font-mono">฿{total61_90.toLocaleString()}</strong>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px]">&gt;90 วัน</span>
+              <strong className="text-rose-600 font-mono">฿{totalOver90.toLocaleString()}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart 2: Top 5 Highest Outstanding Debtors vs Credit Limit */}
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>5 อันดับลูกหนี้ค้างชำระสูงสุด (Top Debtors Concentration)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                แยกสัดส่วนหนี้ในกำหนด (Current) กับหนี้เกินกำหนด (Overdue) เทียบวงเงินสินเชื่อ
+              </p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/60 shrink-0 self-start sm:self-auto">
+              Top 5 = ฿{topDebtorsChartData.reduce((acc, c) => acc + c.totalOutstanding, 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="h-64 w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={topDebtorsChartData}
+                margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#33415520" />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(val) => `฿${(val / 1000).toFixed(0)}k`}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                  width={110}
+                />
+                <Tooltip
+                  formatter={(value: any, name: any) => [
+                    `฿${Number(value).toLocaleString()}`,
+                    name === 'current' ? 'อยู่ในกำหนด (Current)' : 'เกินกำหนด (Overdue)',
+                  ]}
+                  labelFormatter={(_label, payload: any) => {
+                    const row = payload?.[0]?.payload;
+                    return row ? `${row.fullName} (วงเงิน: ฿${row.creditLimit.toLocaleString()} | ใช้ไป ${row.utilizationPct}%)` : '';
+                  }}
+                  contentStyle={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: '#334155',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
+                  formatter={(value) => (value === 'current' ? 'อยู่ในกำหนด' : 'เกินกำหนด')}
+                />
+                <Bar dataKey="current" stackId="debt" fill="#10b981" radius={[0, 0, 0, 0]} name="current" />
+                <Bar dataKey="overdue" stackId="debt" fill="#f59e0b" radius={[0, 6, 6, 0]} name="overdue" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>เขียว = หนี้ในกำหนด</span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 ml-2"></span>
+              <span>ส้ม = หนี้เกินกำหนด</span>
+            </span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              {overlimitAccountsCount > 0 ? `⚠ มี ${overlimitAccountsCount} รายใช้วงเงินเกิน 85%` : '✓ วงเงินอยู่ในระดับปลอดภัย'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Customer Credit Risk & Aging Analysis Table */}
       <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
         {/* Table Controls: Search, Risk Pill Filter, Sorting */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">

@@ -24,7 +24,21 @@ import {
   BarChart3,
   Flame,
   Snowflake,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  Cell,
+  PieChart,
+  Pie,
+} from 'recharts';
 import { InventoryItem } from '../types';
 
 interface InventoryViewProps {
@@ -147,6 +161,62 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
 
     return list;
   }, [enrichedInventory, searchTerm, selectedCategory, selectedHealthFilter, selectedAbcClass, sortBy]);
+
+  // Chart 1: Category Asset Valuation & SKU Share
+  const categoryChartData = useMemo(() => {
+    const catMap = new Map<string, { name: string; totalValue: number; skuCount: number }>();
+    enrichedInventory.forEach((item) => {
+      if (!catMap.has(item.category)) {
+        catMap.set(item.category, { name: item.category, totalValue: 0, skuCount: 0 });
+      }
+      const entry = catMap.get(item.category)!;
+      entry.totalValue += item.totalAssetValue;
+      entry.skuCount += 1;
+    });
+
+    const colors = ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6'];
+    return Array.from(catMap.values())
+      .sort((a, b) => b.totalValue - a.totalValue)
+      .map((cat, idx) => {
+        const displayName = cat.name.replace('และ', '&').replace('ห้องเย็นสำเร็จรูป', 'ห้องเย็น');
+        return {
+          ...cat,
+          shortName: displayName.length > 15 ? displayName.substring(0, 13) + '..' : displayName,
+          sharePct: totalValuation > 0 ? Number(((cat.totalValue / totalValuation) * 100).toFixed(1)) : 0,
+          fill: colors[idx % colors.length],
+        };
+      });
+  }, [enrichedInventory, totalValuation]);
+
+  // Chart 2: ABC Capital Concentration vs Stock Turnover Velocity
+  const abcChartData = useMemo(() => {
+    const classes: Array<'A' | 'B' | 'C'> = ['A', 'B', 'C'];
+    const colors = { A: '#3b82f6', B: '#6366f1', C: '#64748b' };
+    const descriptions = {
+      A: 'สินค้าหลัก (70% มูลค่ารวม)',
+      B: 'กลุ่มรอง (20% มูลค่ารวม)',
+      C: 'สินค้าปลีกย่อย (10% มูลค่า)',
+    };
+
+    return classes.map((cls) => {
+      const items = enrichedInventory.filter((i) => i.abcClass === cls);
+      const value = items.reduce((acc, i) => acc + i.totalAssetValue, 0);
+      const avgTurn = items.length > 0
+        ? items.reduce((acc, i) => acc + i.stockTurnover, 0) / items.length
+        : 0;
+
+      return {
+        classKey: cls,
+        name: `Class ${cls}`,
+        fullName: `Class ${cls} - ${descriptions[cls]}`,
+        totalValue: value,
+        skuCount: items.length,
+        avgTurnover: Number(avgTurn.toFixed(1)),
+        sharePct: totalValuation > 0 ? Number(((value / totalValuation) * 100).toFixed(1)) : 0,
+        fill: colors[cls],
+      };
+    });
+  }, [enrichedInventory, totalValuation]);
 
   const toggleExpand = (code: string) => {
     setExpandedItemCode((prev) => (prev === code ? null : code));
@@ -452,7 +522,178 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ inventory }) => {
         </div>
       </div>
 
-      {/* 4. Interactive Master Inventory & Valuation Table */}
+      {/* 4. Visual Inventory & Asset Intelligence (Charts for Instant Executive Decision) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Chart 1: Asset Valuation by Category */}
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>การกระจายตัวของมูลค่าสินค้าตามหมวดหมู่ (Asset Valuation by Category)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                สัดส่วนเม็ดเงินทุนจมและจำนวนรายการสินค้า (Active SKUs) แยกตามกลุ่มสินค้า
+              </p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 shrink-0 self-start sm:self-auto">
+              Total ฿{totalValuation.toLocaleString()}
+            </span>
+          </div>
+
+          <div className="h-64 w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={categoryChartData}
+                margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#33415520" />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(val) => `฿${(val / 1000).toFixed(0)}k`}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="shortName"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                  width={115}
+                />
+                <Tooltip
+                  formatter={(value: any) => [`฿${Number(value).toLocaleString()}`, 'มูลค่าสต็อกรวม']}
+                  labelFormatter={(_label, payload: any) => {
+                    const row = payload?.[0]?.payload;
+                    return row ? `${row.name} (${row.skuCount} รายการ | ${row.sharePct}% ของสต็อกทั้งหมด)` : '';
+                  }}
+                  contentStyle={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: '#334155',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '12px',
+                  }}
+                />
+                <Bar dataKey="totalValue" radius={[0, 6, 6, 0]}>
+                  {categoryChartData.map((entry, index) => (
+                    <Cell key={`cat-cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+            {categoryChartData.slice(0, 4).map((c, idx) => (
+              <div key={idx} className="text-center sm:text-left">
+                <span className="text-slate-400 block text-[10px] truncate">{c.name}</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">฿{c.totalValue.toLocaleString()}</span>
+                <span className="text-[10px] text-slate-500 block">({c.sharePct}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Chart 2: ABC Capital Concentration vs Stock Turnover Velocity */}
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>โครงสร้างเงินทุนกลุ่ม ABC vs อัตราหมุนเวียน (Capital &amp; Velocity)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                ประเมินความคุ้มค่าของการลงทุน: ยอดเงินทุนจมเทียบกับรอบการหมุนเวียนสินค้า (Turnover)
+              </p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 shrink-0 self-start sm:self-auto">
+              Avg {avgTurnover}x / ปี
+            </span>
+          </div>
+
+          <div className="h-64 w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={abcChartData} margin={{ top: 10, right: 20, left: 10, bottom: 15 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#33415520" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  yAxisId="left"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(val) => `฿${(val / 1000).toFixed(0)}k`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 10, fill: '#10b981' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(val) => `${val}x`}
+                />
+                <Tooltip
+                  formatter={(value: any, name: any) => [
+                    name === 'totalValue' ? `฿${Number(value).toLocaleString()}` : `${value} รอบ/ปี`,
+                    name === 'totalValue' ? 'มูลค่าเงินทุนจม' : 'รอบหมุนเวียน (Turnover)',
+                  ]}
+                  labelFormatter={(_label, payload: any) => {
+                    const row = payload?.[0]?.payload;
+                    return row ? `${row.fullName} (${row.skuCount} SKUs | ${row.sharePct}% ของสต็อก)` : '';
+                  }}
+                  contentStyle={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    borderColor: '#334155',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
+                  formatter={(value) => (value === 'totalValue' ? 'มูลค่าเงินทุนรวม (฿)' : 'รอบหมุนเวียนเฉลี่ย (x/ปี)')}
+                />
+                <Bar yAxisId="left" dataKey="totalValue" radius={[6, 6, 0, 0]} name="totalValue">
+                  {abcChartData.map((entry, index) => (
+                    <Cell key={`abc-cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+                <Bar yAxisId="right" dataKey="avgTurnover" fill="#10b981" radius={[6, 6, 0, 0]} name="avgTurnover" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 gap-2">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-blue-500"></span>
+                <span>Class A = 70% มูลค่า (ตรวจนับทุกสัปดาห์)</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-indigo-500"></span>
+                <span>Class B = 20% (ตรวจนับรายเดือน)</span>
+              </span>
+            </div>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              {slowMovingCapital > 0 ? `⚠ เงินจม Slow-Moving ฿${slowMovingCapital.toLocaleString()}` : '✓ สภาพคล่องสต็อกดีเยี่ยม'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Interactive Master Inventory & Valuation Table */}
       <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
         {/* Table Filter Controls */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
