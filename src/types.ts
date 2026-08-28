@@ -185,9 +185,10 @@ export interface FeatureToggles {
   coreSales?: boolean;
   aiCopilot: boolean;
   arAging: boolean;
+  cashFlowForecast: boolean;
+  salesCommission: boolean;
   inventoryValuation: boolean;
   reportStudio: boolean;
-  cashFlowForecast: boolean;
   odbcSync: boolean;
   auditLogs?: boolean;
   multiCompany?: boolean;
@@ -236,6 +237,55 @@ export interface CustomerCashInflowItem {
   expectedInflow: number;
   discountEligible: boolean;
   discountedAmount: number;
+}
+
+// Sales Target, Quota & Commission Tracking Types
+export interface SalesTargetItem {
+  salesRep: string;
+  targetRevenue: number;
+  targetGrossMarginPct: number;
+  targetNewAccounts: number;
+  period: string; // e.g. '2026-Q1', '2026-Q2', '2026-03'
+  department: string;
+}
+
+export interface CommissionTier {
+  thresholdPct: number; // e.g. 0%, 80%, 100%, 120%
+  ratePct: number; // e.g. 1.0%, 1.5%, 2.5%, 3.5%
+  label: string;
+}
+
+export interface CommissionSchemeConfig {
+  modelType: 'revenue_tiered' | 'gross_profit_linked' | 'accelerator_kicker';
+  baseRatePct: number; // e.g. 1.5%
+  kickerRatePct: number; // e.g. +1.0% when > 100% target
+  superKickerRatePct: number; // e.g. +2.0% when > 120% target
+  minMarginThresholdPct: number; // e.g. 25% (if margin < 25%, commission reduced by 50%)
+  uncollectedOverdueDeductionPct: number; // e.g. 10% penalty for invoices > 90d overdue
+  paidOnlySettlement: boolean; // Only pay commission on collected/paid cash
+}
+
+export interface SalesRepAttainment {
+  salesRep: string;
+  targetRevenue: number;
+  actualRevenue: number;
+  attainmentPct: number;
+  targetGrossMarginPct: number;
+  actualGrossMarginPct: number;
+  grossProfitAmount: number;
+  invoiceCount: number;
+  collectedAmount: number;
+  uncollectedAmount: number;
+  overdueSevereAmount: number;
+  baseCommission: number;
+  bonusKickerCommission: number;
+  penaltyDeduction: number;
+  totalCommissionEarned: number;
+  pacingForecastRevenue: number;
+  pacingAttainmentPct: number;
+  rank: number;
+  badge: string;
+  status: 'Exceeding' | 'On Track' | 'At Risk' | 'Behind';
 }
 
 // Enterprise White-Label & Theme Branding Types

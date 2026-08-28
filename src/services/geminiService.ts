@@ -62,6 +62,8 @@ export async function fetchAiChat(question: string, contextData: any): Promise<A
     let reply = 'ระบบกำลังประมวลผลข้อมูล Sage 50...';
     if (q.includes('กระแสเงินสด') || q.includes('cash flow') || q.includes('สภาพคล่อง') || q.includes('forecast')) {
       reply = 'จากแบบจำลองกระแสเงินสดรับ 30 วันข้างหน้า คาดการณ์เงินสดรับสุทธิอยู่ที่ **฿1,420,000** (คิดเป็น 76% ของยอดลูกหนี้รอเก็บ) สภาพคล่องอยู่ในเกณฑ์ปลอดภัย รองรับค่าใช้จ่ายดำเนินงาน (OPEX) ได้มากกว่า 4.2 เดือน โดยแนะนำให้เสนอส่วนลด 2% ให้กับลูกหนี้โครงการขนาดใหญ่เพื่อเร่งเงินสดเข้าในสัปดาห์ที่ 1-2 ครับ';
+    } else if (q.includes('คอมมิชชั่น') || q.includes('commission') || q.includes('เป้าหมาย') || q.includes('quota') || q.includes('attainment')) {
+      reply = 'สรุปผลงานและคอมมิชชั่นทีมขาย Q1: ทีมทำยอดขายบรรลุเป้าหมายเฉลี่ย **104.2%** กองทุนคอมมิชชั่นรวมอยู่ที่ **฿48,950** โดยอันดับ 1 คือ **สมชาย ยอดขายดี** ทำยอดขาย ฿1,580,000 (105.3% Attainment) ได้รับโบนัส Kicker เต็มพิกัด แนะนำให้กระตุ้นทีม SMB เร่งปิดดีลสินค้ามาร์จิ้นสูง (>40%) เพื่อปลดล็อกโบนัส Gross Margin Booster ครับ';
     } else if (q.includes('กำไร') || q.includes('profit')) {
       reply = 'จากข้อมูล Sage 50 สินค้าที่ทำอัตรากำไร (Gross Margin) สูงสุดคือ **Acoustic Wall Panel (49.6%)** และ **Solid Teak Dining Table (46.7%)** ส่วนหมวดหมู่ที่มีสัดส่วนยอดขายมากที่สุดคือ Furniture (58%)';
     } else if (q.includes('ค้างชำระ') || q.includes('ลูกหนี้') || q.includes('ar')) {

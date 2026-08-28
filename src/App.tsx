@@ -11,6 +11,7 @@ import { DataHealthModal } from './components/DataHealthModal';
 import { DashboardView } from './views/DashboardView';
 import { ArAgingView } from './views/ArAgingView';
 import { CashFlowForecastView } from './views/CashFlowForecastView';
+import { SalesTargetCommissionView } from './views/SalesTargetCommissionView';
 import { InventoryView } from './views/InventoryView';
 import { CustomFieldMappingView } from './views/CustomFieldMappingView';
 import { ReportStudioView } from './views/ReportStudioView';
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
     aiCopilot: true,
     arAging: true,
     cashFlowForecast: true,
+    salesCommission: true,
     inventoryValuation: true,
     reportStudio: true,
     odbcSync: true,
@@ -445,6 +447,14 @@ export const App: React.FC = () => {
               onOpenDebtDraft={(customer, invoiceNo, amount, overdueDays) =>
                 setDebtModal({ isOpen: true, customer, invoiceNo, amount, overdueDays })
               }
+              onOpenCopilot={() => setIsCopilotOpen(true)}
+            />
+          )}
+
+          {activeTab === 'sales-commission' && (
+            <SalesTargetCommissionView
+              invoices={invoices}
+              customers={customers}
               onOpenCopilot={() => setIsCopilotOpen(true)}
             />
           )}

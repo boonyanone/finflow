@@ -12,6 +12,7 @@ import {
   Award,
   BarChart3,
   TrendingUp,
+  Target,
 } from 'lucide-react';
 import { fetchAiChat, fetchAiReportBuilder } from '../services/geminiService';
 import { ReportDefinition } from '../types';
@@ -51,6 +52,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
 
   const quickPrompts = [
     { text: 'ประเมินกระแสเงินสดรับล่วงหน้า และจุดเสี่ยงสภาพคล่อง', icon: TrendingUp },
+    { text: 'สรุปผลงานยอดขายเทียบเป้าหมาย และการคำนวณคอมมิชชั่น Q1', icon: Target },
     { text: 'สินค้าไหนกำไรดีที่สุด?', icon: Lightbulb },
     { text: 'ลูกหนี้รายไหนค้างชำระเกิน 60 วัน?', icon: AlertTriangle },
     { text: 'เซลส์คนไหนทำยอดขายสูงสุด?', icon: Award },
