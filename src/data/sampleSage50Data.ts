@@ -16,12 +16,13 @@ import {
 
 export const SIAM_COLD_ROOM_COMPANY: CompanyWorkspace = {
   id: 'comp-coldroom',
-  name: 'บจก. สยาม คูลลิ่ง แอนด์ อินซูเลชั่น พาเนล',
+  name: 'บจก. สยาม คูลลิ่ง แอนด์ อินซูเลชั่น พาเนล (ข้อมูลตัวอย่าง - DEMO)',
   sageEdition: 'Sage 50 Quantum Accounting 2026 (Manufacturing & Contracting)',
   currency: 'THB (฿)',
   fiscalYear: '2026 (ม.ค. - ธ.ค.)',
   lastSyncTime: 'วันนี้ 15:30 น.',
   syncStatus: 'connected',
+  isDemo: true,
 };
 
 export const SIAM_COLD_ROOM_CUSTOMERS: Customer[] = [
@@ -938,21 +939,23 @@ export const INITIAL_COMPANIES: CompanyWorkspace[] = [
   SIAM_COLD_ROOM_COMPANY,
   {
     id: 'comp-1',
-    name: 'Apex Global Trading Co., Ltd.',
+    name: 'Apex Global Trading Co., Ltd. (ข้อมูลตัวอย่าง - DEMO)',
     sageEdition: 'Sage 50 US Pro 2026',
     currency: 'THB (฿)',
     fiscalYear: '2026 (Jan - Dec)',
     lastSyncTime: 'วันนี้ 16:45 น.',
     syncStatus: 'connected',
+    isDemo: true,
   },
   {
     id: 'comp-2',
-    name: 'Siam Luxury Living Group',
+    name: 'Siam Luxury Living Group (ข้อมูลตัวอย่าง - DEMO)',
     sageEdition: 'Sage 50 Premium Multi-User',
     currency: 'THB (฿)',
     fiscalYear: '2026 (Jan - Dec)',
     lastSyncTime: 'เมื่อวาน 18:30 น.',
     syncStatus: 'idle',
+    isDemo: true,
   },
 ];
 

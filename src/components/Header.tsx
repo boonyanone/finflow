@@ -8,7 +8,7 @@ import {
   Search,
   ChevronDown,
   Printer,
-  LayoutDashboard,
+  LayoutGrid,
   Clock,
   Boxes,
   GitMerge,
@@ -17,8 +17,9 @@ import {
   Database,
   Shield,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
-import { FeatureToggles } from '../types';
+import { FeatureToggles, ThemeConfig } from '../types';
 
 interface HeaderProps {
   activeTab: string;
@@ -32,17 +33,18 @@ interface HeaderProps {
   features: FeatureToggles;
   isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
+  themeConfig?: ThemeConfig;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
-  lang = 'th',
   onOpenCopilot,
   onOpenUpload,
   onOpenDataHealth,
   features,
   isSidebarOpen = true,
   onToggleSidebar,
+  themeConfig,
 }) => {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -61,63 +63,63 @@ export const Header: React.FC<HeaderProps> = ({
     switch (activeTab) {
       case 'dashboard':
         return {
-          title: lang === 'en' ? 'Sales & Margin Hub' : 'Sales & Margin Hub (ยอดขายและกำไร)',
-          category: 'Financial Analytics',
-          icon: <LayoutDashboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+          title: 'Sales & Margin Hub (ยอดขายและกำไร)',
+          subtitle: 'Financial Analytics • Sage 50 Multi-Company Consolidation',
+          icon: <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'ar-aging':
         return {
-          title: lang === 'en' ? 'A/R Aging & Collections' : 'A/R Aging (วิเคราะห์ลูกหนี้)',
-          category: 'Accounts Receivable',
+          title: 'A/R Aging (วิเคราะห์ลูกหนี้และการเรียกเก็บ)',
+          subtitle: 'วิเคราะห์โครงสร้างอายุหนี้ วงเงินสินเชื่อ และสถานะหนี้ค้างชำระ',
           icon: <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'inventory':
         return {
-          title: lang === 'en' ? 'Inventory Valuation' : 'Inventory Valuation (มูลค่าสินค้าคงคลัง)',
-          category: 'Stock & COGS',
+          title: 'Inventory Valuation (มูลค่าสินค้าคงคลัง)',
+          subtitle: 'มูลค่าสินค้าคงคลัง อัตราหมุนเวียน (Turnover) และจุดสั่งซื้อซ้ำ',
           icon: <Boxes className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'field-mapping':
         return {
-          title: lang === 'en' ? 'Custom Field Mapping' : 'Custom Field Mapping (จับคู่ฟิลด์)',
-          category: 'Data Pipeline',
+          title: 'Custom Field Mapping Hub',
+          subtitle: 'โครงสร้างความสัมพันธ์ตาราง Fact Invoices, Dim Customers และ Dim Products',
           icon: <GitMerge className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'report-studio':
         return {
-          title: lang === 'en' ? 'Report Studio' : 'Report Studio (สร้างรายงาน)',
-          category: 'Self-Service BI',
-          icon: <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+          title: 'Ad-Hoc Report Studio',
+          subtitle: 'เครื่องมือสร้างรายงานอิสระแบบ Drag-and-Drop Pivot Matrix',
+          icon: <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'standard-reports':
         return {
-          title: lang === 'en' ? 'Standard Reports' : 'Standard Reports (รายงานมาตรฐาน)',
-          category: 'Executive Reports',
+          title: 'รายงานมาตรฐาน (Standard Reports)',
+          subtitle: 'คลังรายงานสำเร็จรูป 10 หมวดพร้อมพิมพ์และส่งออกทันที',
           icon: <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'data-hub':
         return {
-          title: lang === 'en' ? 'Import Sage Excel' : 'Import Sage Excel (นำเข้าไฟล์)',
-          category: 'ETL Pipeline',
+          title: 'Import Sage Excel / CSV',
+          subtitle: 'นำเข้าไฟล์ Sage 50 Excel / CSV ตรวจสอบคุณภาพและจับคู่คอลัมน์อัตโนมัติ',
           icon: <FileUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'odbc-sync':
         return {
-          title: lang === 'en' ? 'ODBC Direct Sync' : 'ODBC Direct Sync (เชื่อมต่อฐานข้อมูล)',
-          category: 'Live Gateway',
-          icon: <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+          title: 'ODBC Direct Sync (Sage 50 Gateway)',
+          subtitle: 'ตรวจสอบสถานะการเชื่อมต่อฐานข้อมูล Sage 50 และ Pervasive PSQL',
+          icon: <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       case 'settings':
         return {
-          title: lang === 'en' ? 'System Settings & Roles' : 'System Settings (ตั้งค่าระบบ & สิทธิ์)',
-          category: 'Administration',
+          title: 'ตั้งค่าโมดูล & สิทธิ์ (Administration & Themes)',
+          subtitle: 'ปรับแต่งแบรนด์ลูกค้า, สลับธีมสีองค์กร, ควบคุมโมดูล และจำลองสิทธิ์ RBAC',
           icon: <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       default:
         return {
-          title: 'Sales & Margin Hub',
-          category: 'Financial Analytics',
-          icon: <LayoutDashboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+          title: 'Sales & Margin Hub (ยอดขายและกำไร)',
+          subtitle: 'Financial Analytics • Sage 50 Multi-Company Consolidation',
+          icon: <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
     }
   };
@@ -141,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `FinFlow_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `${themeConfig?.brandName || 'FinFlow'}_Report_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -152,15 +154,15 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 bg-transparent px-3 sm:px-5 md:px-7 flex items-center justify-between shrink-0 z-20 transition-colors gap-2 min-w-0">
+    <header className="h-16 bg-transparent px-4 sm:px-6 md:px-8 flex items-center justify-between shrink-0 z-20 transition-colors gap-3 min-w-0">
       {/* Left Active View Info & Mobile/Collapsed Sidebar Toggle */}
-      <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 shrink">
+      <div className="flex items-center space-x-3 min-w-0 shrink">
         {onToggleSidebar && (!isSidebarOpen ? (
           <button
             onClick={onToggleSidebar}
             aria-label="Open navigation menu"
             title="ขยายเมนู (Expand Sidebar)"
-            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl bg-white dark:bg-slate-800/80 shadow-2xs border border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 transition shrink-0 cursor-pointer"
+            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition shrink-0 cursor-pointer"
           >
             <PanelLeftOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </button>
@@ -168,35 +170,32 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleSidebar}
             aria-label="Toggle navigation menu on mobile"
-            className="lg:hidden text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl bg-white dark:bg-slate-800/80 shadow-2xs border border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 transition shrink-0 cursor-pointer"
+            className="lg:hidden text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition shrink-0 cursor-pointer"
           >
             <Menu className="w-4 h-4" />
           </button>
         ))}
 
-        <div className="flex items-center space-x-2.5 min-w-0 truncate">
-          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800/80 shadow-2xs border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-center shrink-0">
-            {currentView.icon}
-          </div>
+        <div className="flex items-center space-x-3 min-w-0 truncate">
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base text-slate-900 dark:text-white font-bold truncate leading-tight tracking-tight" id="currentBreadcrumb">
               {currentView.title}
             </h1>
             <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">
-              {currentView.category}
+              {currentView.subtitle}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Controls: Clean, spacious, and uncluttered */}
-      <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
-        {/* Data Integrity & Health Badge (v3.0 CDM Layer) */}
+      {/* Right Controls */}
+      <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+        {/* Data Integrity & Health Badge */}
         {onOpenDataHealth && (
           <button
             onClick={onOpenDataHealth}
-            title="คลิกเพื่อดูรายละเอียดการตรวจสอบคุณภาพข้อมูลและงบทดลอง (Data Quality & Reconciliation Inspector)"
-            className="flex items-center space-x-1.5 bg-emerald-50/90 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition cursor-pointer shrink-0"
+            title="ตรวจสอบคุณภาพข้อมูลและงบทดลอง (Data Health Inspector)"
+            className="flex items-center space-x-1.5 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-2xs"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="hidden sm:inline">Data Health:</span>
@@ -206,13 +205,13 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Global Search */}
-        <div className="relative hidden 2xl:block w-52">
+        <div className="relative hidden xl:block w-48">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             id="headerGlobalSearch"
-            placeholder={lang === 'th' ? 'ค้นหาข้อมูล...' : 'Search records...'}
-            className="w-full bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/70 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-2xs transition"
+            placeholder="ค้นหารายการ..."
+            className="w-full bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 transition"
           />
         </div>
 
@@ -222,9 +221,9 @@ export const Header: React.FC<HeaderProps> = ({
             id="btnHeaderCopilot"
             onClick={onOpenCopilot}
             title="Open AI Copilot"
-            className="flex items-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-xs shadow-blue-500/20"
+            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-2xs"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-100" />
+            <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">AI Copilot</span>
           </button>
         )}
@@ -232,8 +231,8 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Upload Excel Button */}
         <button
           onClick={onOpenUpload}
-          title="Upload Sage File"
-          className="flex items-center space-x-1.5 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer shrink-0"
+          title="Import Sage File"
+          className="flex items-center space-x-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer shrink-0"
         >
           <FileUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           <span className="hidden md:inline">Import Sage</span>
@@ -245,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => setShowExportDropdown(!showExportDropdown)}
             title="Export Report"
-            className="flex items-center space-x-1 sm:space-x-1.5 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer"
+            className="flex items-center space-x-1 sm:space-x-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden sm:inline">Export</span>
@@ -253,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {showExportDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 z-50 space-y-1 shadow-lg">
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#141e35] border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 z-50 space-y-1 shadow-xl">
               <button
                 onClick={() => {
                   handleExportCsv();
@@ -261,7 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center space-x-2 cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>Export Dataset (.csv)</span>
               </button>
               <button
@@ -271,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center space-x-2 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <Printer className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>Print / Save as PDF</span>
               </button>
             </div>

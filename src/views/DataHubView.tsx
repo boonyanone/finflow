@@ -14,8 +14,15 @@ import {
   Plus,
   Download,
   Building2,
+  FileText,
 } from 'lucide-react';
 import { MappingProfile, InvoiceRecord } from '../types';
+import {
+  downloadSage50DemoExcel,
+  downloadExpressDemoExcel,
+  downloadBlankStarterTemplate,
+  downloadInventoryDemoExcel,
+} from '../utils/demoExcelGenerator';
 import { downloadColdRoomExcelTemplate } from '../utils/coldRoomExportHelper';
 
 interface DataHubViewProps {
@@ -45,27 +52,136 @@ export const DataHubView: React.FC<DataHubViewProps> = ({
               </span>
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              รองรับไฟล์ Excel/CSV จาก Sage 50, Express, Peak, FlowAccount พร้อมระบบ AI Smart Column Mapping
+              รองรับไฟล์ Excel/CSV จาก Sage 50, Express, Winspeed, Peak, FlowAccount พร้อมระบบ AI Smart Column Mapping
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
-            onClick={downloadColdRoomExcelTemplate}
-            className="flex items-center space-x-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer shrink-0 shadow-sm"
-          >
-            <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>ดาวน์โหลด .xlsx ตัวอย่างผนังห้องเย็น</span>
-          </button>
-
-          <button
             onClick={onOpenUpload}
             className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-sm shadow-blue-500/20"
           >
             <UploadCloud className="w-4 h-4" />
-            <span>นำเข้าไฟล์ Excel ใหม่</span>
+            <span>นำเข้าไฟล์ Excel / ทดลอง Demo</span>
           </button>
+        </div>
+      </div>
+
+      {/* Demo Download & Starter Templates Section */}
+      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-4 w-full min-w-0 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>ศูนย์ดาวน์โหลดและทดสอบไฟล์ Excel ตัวอย่าง (Demo &amp; Starter Templates)</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              ดาวน์โหลดไฟล์ตัวอย่าง .xlsx นำไปทดลองนำเข้า หรือใช้เป็นแม่แบบในการจัดรูปแบบไฟล์จริงของบริษัท
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 1. Siam Cooling Cold Room */}
+          <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-700 transition flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>บจก. สยาม คูลลิ่งฯ</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold">
+                  งานห้องเย็น
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                16 โครงการผนัง PIR, ประตูสแตนเลส, ลูกหนี้ค้างชำระ และข้อมูลรับชำระเงินจริง
+              </p>
+            </div>
+            <button
+              onClick={downloadColdRoomExcelTemplate}
+              className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>ดาวน์โหลด .xlsx</span>
+            </button>
+          </div>
+
+          {/* 2. Express Accounting Thai */}
+          <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-700 transition flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Express Accounting</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                  ภาษาไทย
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                หัวตารางภาษาไทย: เลขที่เอกสาร, วันครบกำหนด, ยอดขายสุทธิ, ต้นทุน, กำไร
+              </p>
+            </div>
+            <button
+              onClick={downloadExpressDemoExcel}
+              className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-lg bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>ดาวน์โหลด .xlsx</span>
+            </button>
+          </div>
+
+          {/* 3. Sage 50 US Format */}
+          <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-300 dark:hover:border-indigo-700 transition flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Sage 50 US / UK</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold">
+                  Global ERP
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                ฟิลด์มาตรฐาน Invoice No, Customer ID, AR Balance Due, COGS Amount
+              </p>
+            </div>
+            <button
+              onClick={downloadSage50DemoExcel}
+              className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>ดาวน์โหลด .xlsx</span>
+            </button>
+          </div>
+
+          {/* 4. Blank Starter Template */}
+          <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 hover:border-amber-300 dark:hover:border-amber-700 transition flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Blank Template</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold">
+                  แม่แบบเปล่า
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                หัวตาราง 2 ภาษาพร้อมตัวอย่าง 1 บรรทัด สำหรับนำไปกรอกข้อมูลของลูกค้า
+              </p>
+            </div>
+            <button
+              onClick={downloadBlankStarterTemplate}
+              className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-lg bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>ดาวน์โหลด Template</span>
+            </button>
+          </div>
         </div>
       </div>
 

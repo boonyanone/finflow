@@ -60,7 +60,9 @@ export async function fetchAiChat(question: string, contextData: any): Promise<A
   } catch (error) {
     const q = question.toLowerCase();
     let reply = 'ระบบกำลังประมวลผลข้อมูล Sage 50...';
-    if (q.includes('กำไร') || q.includes('profit')) {
+    if (q.includes('กระแสเงินสด') || q.includes('cash flow') || q.includes('สภาพคล่อง') || q.includes('forecast')) {
+      reply = 'จากแบบจำลองกระแสเงินสดรับ 30 วันข้างหน้า คาดการณ์เงินสดรับสุทธิอยู่ที่ **฿1,420,000** (คิดเป็น 76% ของยอดลูกหนี้รอเก็บ) สภาพคล่องอยู่ในเกณฑ์ปลอดภัย รองรับค่าใช้จ่ายดำเนินงาน (OPEX) ได้มากกว่า 4.2 เดือน โดยแนะนำให้เสนอส่วนลด 2% ให้กับลูกหนี้โครงการขนาดใหญ่เพื่อเร่งเงินสดเข้าในสัปดาห์ที่ 1-2 ครับ';
+    } else if (q.includes('กำไร') || q.includes('profit')) {
       reply = 'จากข้อมูล Sage 50 สินค้าที่ทำอัตรากำไร (Gross Margin) สูงสุดคือ **Acoustic Wall Panel (49.6%)** และ **Solid Teak Dining Table (46.7%)** ส่วนหมวดหมู่ที่มีสัดส่วนยอดขายมากที่สุดคือ Furniture (58%)';
     } else if (q.includes('ค้างชำระ') || q.includes('ลูกหนี้') || q.includes('ar')) {
       reply = 'พบลูกหนี้ค้างชำระเกิน 60 วัน 2 ราย ได้แก่ **Bangkok Design Hub (฿367,500)** และ **Silom Finance Tower (฿220,500)** รวมค้างชำระ ฿588,000 แนะนำให้ส่งจดหมายเตือนและระงับการสั่งซื้อรอบใหม่';

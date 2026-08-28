@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileSpreadsheet,
   Plus,
   Trash2,
   Save,
   Download,
-  Play,
   Layers,
   Filter,
   BarChart3,
   Table as TableIcon,
   PieChart as PieIcon,
-  Calculator,
-  Sparkles,
   Check,
   RotateCcw,
+  GripVertical,
+  X,
+  Sparkles,
+  ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -31,7 +33,7 @@ import {
   ComposedChart,
 } from 'recharts';
 import { InvoiceRecord, ReportDefinition, ReportFilter, CalculatedField } from '../types';
-import { exportToCsv, exportToExcel } from '../utils/exportUtils';
+import { exportToExcel } from '../utils/exportUtils';
 
 interface ReportStudioViewProps {
   invoices: InvoiceRecord[];
@@ -41,20 +43,26 @@ interface ReportStudioViewProps {
   onShowToast: (msg: string) => void;
 }
 
-const AVAILABLE_FIELDS = [
-  { id: 'invoiceNo', label: 'Invoice No (เลขที่บิล)', type: 'string' },
-  { id: 'date', label: 'Invoice Date (วันที่เอกสาร)', type: 'date' },
-  { id: 'customerName', label: 'Customer Name (ชื่อลูกค้า)', type: 'string' },
-  { id: 'salesRep', label: 'Sales Rep (พนักงานขาย)', type: 'string' },
-  { id: 'category', label: 'Category (หมวดหมู่สินค้า)', type: 'string' },
-  { id: 'itemDescription', label: 'Product Description (สินค้า)', type: 'string' },
-  { id: 'quantity', label: 'Quantity (จำนวน)', type: 'number' },
-  { id: 'netAmount', label: 'Net Sales Amount (ยอดขายสุทธิ)', type: 'number' },
-  { id: 'cogs', label: 'COGS Cost (ต้นทุนขาย)', type: 'number' },
-  { id: 'grossProfit', label: 'Gross Profit (กำไรขั้นต้น)', type: 'number' },
-  { id: 'marginPct', label: 'Margin % (อัตรากำไร %)', type: 'number' },
-  { id: 'status', label: 'Status (สถานะบิล)', type: 'string' },
-  { id: 'month', label: 'Month (เดือน)', type: 'string' },
+interface FieldItem {
+  id: string;
+  name: string;
+  category: 'dimension' | 'measure';
+  dataType: 'string' | 'number' | 'date';
+}
+
+const ALL_STUDIO_FIELDS: FieldItem[] = [
+  { id: 'salesRep', name: 'Sales Rep (พนักงานขาย)', category: 'dimension', dataType: 'string' },
+  { id: 'category', name: 'Category (หมวดสินค้า)', category: 'dimension', dataType: 'string' },
+  { id: 'customerName', name: 'Customer (ลูกค้า)', category: 'dimension', dataType: 'string' },
+  { id: 'month', name: 'Month (เดือน)', category: 'dimension', dataType: 'string' },
+  { id: 'period', name: 'Quarter (ไตรมาส)', category: 'dimension', dataType: 'string' },
+  { id: 'status', name: 'Status (สถานะบิล)', category: 'dimension', dataType: 'string' },
+  { id: 'itemDescription', name: 'Product Name (ชื่อสินค้า)', category: 'dimension', dataType: 'string' },
+  { id: 'netAmount', name: 'Sales Amount (ยอดขายสุทธิ)', category: 'measure', dataType: 'number' },
+  { id: 'grossProfit', name: 'Gross Profit (กำไรขั้นต้น)', category: 'measure', dataType: 'number' },
+  { id: 'cogs', name: 'COGS Cost (ต้นทุนขาย)', category: 'measure', dataType: 'number' },
+  { id: 'marginPct', name: 'Margin % (อัตรากำไร)', category: 'measure', dataType: 'number' },
+  { id: 'quantity', name: 'Quantity (จำนวนชิ้น)', category: 'measure', dataType: 'number' },
 ];
 
 export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
@@ -65,170 +73,193 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
   onShowToast,
 }) => {
   const [reportTitle, setReportTitle] = useState<string>(
-    activeReportDef?.title || 'รายงานวิเคราะห์ยอดขายและกำไรขั้นต้น (Custom Report)'
+    activeReportDef?.title || 'รายงานวิเคราะห์ยอดขายและกำไรตามพนักงานและหมวดหมู่'
   );
-  const [dataset, setDataset] = useState<'sales' | 'ar_aging' | 'inventory'>('sales');
-  const [selectedFields, setSelectedFields] = useState<string[]>(
-    activeReportDef?.selectedFields || ['month', 'salesRep', 'category', 'netAmount', 'grossProfit', 'marginPct']
+
+  // 4 Pivot Zones: Rows, Columns, Values, Filters
+  const [rowFields, setRowFields] = useState<string[]>(
+    activeReportDef?.groupBy || ['salesRep', 'category']
   );
-  const [groupByField, setGroupByField] = useState<string>(activeReportDef?.groupBy?.[0] || 'salesRep');
-  const [visualization, setVisualization] = useState<'table' | 'bar' | 'line' | 'combo' | 'donut' | 'pivot'>(
-    activeReportDef?.visualization || 'combo'
-  );
-  const [aggregation, setAggregation] = useState<'sum' | 'avg' | 'count'>('sum');
+  const [columnFields, setColumnFields] = useState<string[]>(['month']);
+  const [valueFields, setValueFields] = useState<string[]>(['netAmount', 'grossProfit', 'marginPct']);
   const [filters, setFilters] = useState<ReportFilter[]>(activeReportDef?.filters || []);
 
-  // Calculated fields
-  const [calculatedFields, setCalculatedFields] = useState<CalculatedField[]>([
-    { id: 'calc-1', name: 'Gross Margin %', formula: '(Gross Profit / Net Sales) * 100', format: 'percent' },
-  ]);
+  const [visualization, setVisualization] = useState<'pivot' | 'combo' | 'bar' | 'donut' | 'table'>(
+    activeReportDef?.visualization || 'pivot'
+  );
+  const [valueAggregations, setValueAggregations] = useState<Record<string, 'sum' | 'avg' | 'count'>>({
+    netAmount: 'sum',
+    grossProfit: 'sum',
+    cogs: 'sum',
+    marginPct: 'avg',
+    quantity: 'sum',
+  });
 
-  const toggleField = (fieldId: string) => {
-    if (selectedFields.includes(fieldId)) {
-      if (selectedFields.length > 1) {
-        setSelectedFields(selectedFields.filter((f) => f !== fieldId));
-      }
-    } else {
-      setSelectedFields([...selectedFields, fieldId]);
+  const handleAddFieldToZone = (fieldId: string, zone: 'rows' | 'columns' | 'values' | 'filters') => {
+    if (zone === 'rows') {
+      if (!rowFields.includes(fieldId)) setRowFields([...rowFields, fieldId]);
+    } else if (zone === 'columns') {
+      if (!columnFields.includes(fieldId)) setColumnFields([...columnFields, fieldId]);
+    } else if (zone === 'values') {
+      if (!valueFields.includes(fieldId)) setValueFields([...valueFields, fieldId]);
+    } else if (zone === 'filters') {
+      setFilters([
+        ...filters,
+        { id: `flt-${Date.now()}`, field: fieldId, operator: 'equals', value: 'all' },
+      ]);
     }
   };
 
-  const addFilter = () => {
-    setFilters([
-      ...filters,
-      {
-        id: `f-${Date.now()}`,
-        field: 'category',
-        operator: 'equals',
-        value: 'Furniture',
-      },
-    ]);
+  const handleRemoveField = (fieldId: string, zone: 'rows' | 'columns' | 'values') => {
+    if (zone === 'rows') setRowFields(rowFields.filter((f) => f !== fieldId));
+    if (zone === 'columns') setColumnFields(columnFields.filter((f) => f !== fieldId));
+    if (zone === 'values') setValueFields(valueFields.filter((f) => f !== fieldId));
   };
 
-  const removeFilter = (id: string) => {
-    setFilters(filters.filter((f) => f.id !== id));
-  };
-
-  const updateFilter = (id: string, updates: Partial<ReportFilter>) => {
-    setFilters(filters.map((f) => (f.id === id ? { ...f, ...updates } : f)));
-  };
-
-  // Grouped Result Calculation
-  const groupedData = React.useMemo(() => {
-    let result = [...invoices];
-
-    // Apply filters
+  // Filtered dataset
+  const filteredData = useMemo(() => {
+    let res = [...invoices];
     filters.forEach((flt) => {
-      if (flt.operator === 'equals') {
-        result = result.filter((r) => String((r as any)[flt.field]) === flt.value);
-      } else if (flt.operator === 'greater_than') {
-        result = result.filter((r) => Number((r as any)[flt.field]) > Number(flt.value));
-      } else if (flt.operator === 'less_than') {
-        result = result.filter((r) => Number((r as any)[flt.field]) < Number(flt.value));
-      } else if (flt.operator === 'contains') {
-        result = result.filter((r) =>
-          String((r as any)[flt.field]).toLowerCase().includes(String(flt.value).toLowerCase())
-        );
+      if (flt.value && flt.value !== 'all') {
+        res = res.filter((r) => String((r as any)[flt.field]) === flt.value);
       }
     });
+    return res;
+  }, [invoices, filters]);
 
-    // Grouping
-    if (groupByField && groupByField !== 'none') {
-      const map: Record<string, any> = {};
-      result.forEach((item) => {
-        const key = String((item as any)[groupByField] || 'Other');
-        if (!map[key]) {
-          map[key] = {
-            groupKey: key,
-            quantity: 0,
-            netAmount: 0,
-            cogs: 0,
-            grossProfit: 0,
-            count: 0,
-          };
-        }
-        map[key].quantity += item.quantity || 0;
-        map[key].netAmount += item.netAmount || 0;
-        map[key].cogs += item.cogs || 0;
-        map[key].grossProfit += item.grossProfit || 0;
-        map[key].count += 1;
+  // Pivot Matrix Calculation
+  const pivotMatrix = useMemo(() => {
+    const primaryRow = rowFields[0] || 'salesRep';
+    const secondaryRow = rowFields[1];
+    const primaryCol = columnFields[0];
+
+    const rowKeys: string[] = Array.from(new Set(filteredData.map((d) => String((d as any)[primaryRow] || 'Other'))));
+    const colKeys: string[] = primaryCol
+      ? Array.from(new Set(filteredData.map((d) => String((d as any)[primaryCol] || 'Other'))))
+      : [];
+
+    const matrixRows = rowKeys.map((rKey) => {
+      const items = filteredData.filter((d) => String((d as any)[primaryRow] || 'Other') === rKey);
+      const totalNet = items.reduce((acc, i) => acc + (i.netAmount || 0), 0);
+      const totalCogs = items.reduce((acc, i) => acc + (i.cogs || 0), 0);
+      const totalGp = items.reduce((acc, i) => acc + (i.grossProfit || 0), 0);
+      const totalQty = items.reduce((acc, i) => acc + (i.quantity || 0), 0);
+      const margin = totalNet > 0 ? Math.round((totalGp / totalNet) * 1000) / 10 : 0;
+
+      // By Column breakdown
+      const colBreakdown: Record<string, number> = {};
+      colKeys.forEach((cKey) => {
+        const cItems = items.filter((d) => String((d as any)[primaryCol] || 'Other') === cKey);
+        colBreakdown[cKey] = cItems.reduce((acc, i) => acc + (i.netAmount || 0), 0);
       });
 
-      return Object.values(map).map((g: any) => {
-        const margin = g.netAmount > 0 ? Math.round((g.grossProfit / g.netAmount) * 1000) / 10 : 0;
-        return {
-          ...g,
-          marginPct: margin,
-        };
-      });
-    }
+      return {
+        rowKey: rKey,
+        count: items.length,
+        netAmount: totalNet,
+        grossProfit: totalGp,
+        cogs: totalCogs,
+        marginPct: margin,
+        quantity: totalQty,
+        colBreakdown,
+      };
+    });
 
-    return result;
-  }, [invoices, filters, groupByField]);
+    // Grand totals
+    const grandNet = matrixRows.reduce((acc, r) => acc + r.netAmount, 0);
+    const grandGp = matrixRows.reduce((acc, r) => acc + r.grossProfit, 0);
+    const grandMargin = grandNet > 0 ? Math.round((grandGp / grandNet) * 1000) / 10 : 0;
+    const grandQty = matrixRows.reduce((acc, r) => acc + r.quantity, 0);
 
-  const handleSave = () => {
-    const newReport: ReportDefinition = {
+    return {
+      rows: matrixRows,
+      colKeys,
+      grandTotals: {
+        netAmount: grandNet,
+        grossProfit: grandGp,
+        marginPct: grandMargin,
+        quantity: grandQty,
+      },
+    };
+  }, [filteredData, rowFields, columnFields, valueFields]);
+
+  const handleSaveReport = () => {
+    const report: ReportDefinition = {
       id: `rep-${Date.now()}`,
       title: reportTitle,
-      dataset,
-      selectedFields,
+      dataset: 'sales',
+      selectedFields: [...rowFields, ...columnFields, ...valueFields],
       filters,
-      groupBy: [groupByField],
+      groupBy: rowFields,
       sortBy: { field: 'netAmount', direction: 'desc' },
-      aggregation,
-      calculatedFields,
+      aggregation: 'sum',
       visualization,
       category: 'Custom',
       createdAt: new Date().toISOString().slice(0, 10),
       updatedAt: new Date().toISOString().slice(0, 10),
-      owner: 'Current User',
+      owner: 'Admin',
     };
-    onSaveReport(newReport);
-    onShowToast(`บันทึกรายงาน "${reportTitle}" เข้าสู่ Saved Reports แล้ว`);
+    onSaveReport(report);
+    onShowToast(`✓ บันทึกรายงาน "${reportTitle}" ลงในคลังเรียบร้อย`);
   };
 
   const handleExport = () => {
-    exportToExcel(groupedData, 'CustomReport', `${reportTitle.replace(/\s+/g, '_')}.xlsx`);
-    onShowToast('ส่งออกรายงานเป็นไฟล์ Excel เรียบร้อยแล้ว');
+    exportToExcel(pivotMatrix.rows, 'ReportStudio', `${reportTitle.replace(/\s+/g, '_')}.xlsx`);
+    onShowToast('✓ ส่งออกรายงานไปยัง Excel เรียบร้อยแล้ว');
+  };
+
+  const handleReset = () => {
+    setRowFields(['salesRep', 'category']);
+    setColumnFields(['month']);
+    setValueFields(['netAmount', 'grossProfit', 'marginPct']);
+    setFilters([]);
+    onShowToast('↺ รีเซ็ตโครงสร้างรายงานเรียบร้อยแล้ว');
   };
 
   return (
-    <div id="view-report-studio" className="space-y-5 sm:space-y-6 w-full min-w-0">
-      {/* Banner */}
-      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0 shadow-sm">
+    <div id="view-report-studio" className="space-y-5 w-full min-w-0">
+      {/* Top Header & Actions */}
+      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0 shadow-xs">
         <div className="flex items-center space-x-3.5 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 border border-teal-200/60 dark:border-teal-800/40 flex items-center justify-center shrink-0 shadow-xs">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center space-x-2">
               <input
                 type="text"
                 value={reportTitle}
                 onChange={(e) => setReportTitle(e.target.value)}
-                className="font-bold text-sm sm:text-base text-slate-900 dark:text-white bg-transparent border-b border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 focus:outline-none focus:border-blue-500 pb-0.5 max-w-full"
+                className="font-bold text-sm sm:text-base text-slate-900 dark:text-white bg-transparent border-b border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 focus:outline-hidden focus:border-teal-500 pb-0.5 max-w-full"
               />
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold border border-blue-200/60 dark:border-blue-800/40 whitespace-nowrap">
-                Self-Service Studio
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold border border-teal-200/60 dark:border-teal-800/40 whitespace-nowrap">
+                Pill Drag &amp; Drop Studio
               </span>
             </div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-              สร้างรายงานอิสระโดยไม่ต้องเขียน SQL (ทดแทน Crystal Reports)
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+              สร้างตารางไขว้ (Pivot Matrix) และสรุปยอดขาย กำไรขั้นต้น อัตรากำไรได้อิสระ
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2 shrink-0 self-start sm:self-center">
           <button
-            onClick={handleExport}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition cursor-pointer"
+            onClick={handleReset}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>รีเซ็ต</span>
+          </button>
+          <button
+            onClick={handleExport}
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             <span>Export Excel</span>
           </button>
           <button
-            onClick={handleSave}
-            className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition cursor-pointer shadow-sm shadow-blue-500/20"
+            onClick={handleSaveReport}
+            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition cursor-pointer shadow-xs"
           >
             <Save className="w-3.5 h-3.5" />
             <span>บันทึกรายงาน</span>
@@ -236,178 +267,227 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
         </div>
       </div>
 
-      {/* Builder Layout: Left Controls + Right Live Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 w-full min-w-0">
-        {/* Left Col: Configurations (Fields, Grouping, Filters, Visualization) */}
-        <div className="space-y-4">
-          {/* Step 1: Field Selector */}
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 w-full min-w-0 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
-              <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span>1. เลือกฟิลด์ที่ต้องการแสดง (Columns)</span>
-              </span>
-              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 px-2 py-0.5 rounded-full">
-                {selectedFields.length} selected
-              </span>
-            </div>
+      {/* Main Studio Workspace: Left Field Library + Right Pivot Builder & Canvas */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 w-full min-w-0">
+        {/* Left Column: Field Palette with Grip Dots */}
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>คลังฟิลด์ข้อมูล (Fields)</span>
+            </span>
+            <p className="text-[11px] text-slate-400 mt-0.5">คลิก (+) เพื่อส่งฟิลด์เข้าแกนที่ต้องการ</p>
+          </div>
 
-            <div className="grid grid-cols-1 gap-1 max-h-56 overflow-y-auto custom-scrollbar pr-1">
-              {AVAILABLE_FIELDS.map((f) => {
-                const isSelected = selectedFields.includes(f.id);
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => toggleField(f.id)}
-                    className={`w-full text-left p-2 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
-                      isSelected
-                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-900 dark:text-blue-100 font-bold border border-blue-200 dark:border-blue-800/80 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'
-                    }`}
-                  >
-                    <span>{f.label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />}
-                  </button>
-                );
-              })}
+          {/* Dimensions */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dimensions (มิติข้อมูล)</div>
+            <div className="space-y-1.5">
+              {ALL_STUDIO_FIELDS.filter((f) => f.category === 'dimension').map((f) => (
+                <div
+                  key={f.id}
+                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-xs flex items-center justify-between group transition hover:border-teal-500/40"
+                >
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <GripVertical className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="font-medium text-slate-800 dark:text-slate-200 truncate text-[11px]">{f.name}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 shrink-0 opacity-80 group-hover:opacity-100">
+                    <button
+                      onClick={() => handleAddFieldToZone(f.id, 'rows')}
+                      title="เพิ่มในแถว (Rows)"
+                      className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-teal-600 shadow-2xs cursor-pointer"
+                    >
+                      Row
+                    </button>
+                    <button
+                      onClick={() => handleAddFieldToZone(f.id, 'columns')}
+                      title="เพิ่มในคอลัมน์ (Cols)"
+                      className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-teal-600 shadow-2xs cursor-pointer"
+                    >
+                      Col
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Step 2: Group By & Aggregations */}
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 w-full min-w-0 shadow-sm">
-            <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-              <BarChart3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span>2. จัดกลุ่ม &amp; สรุปผล (Group By &amp; Aggregation)</span>
-            </span>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="text-[11px] text-slate-400 font-medium block mb-1">Group By Column:</label>
-                <select
-                  value={groupByField}
-                  onChange={(e) => setGroupByField(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 font-semibold text-slate-800 dark:text-slate-200"
+          {/* Measures */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Measures (ค่าตัวเลข)</div>
+            <div className="space-y-1.5">
+              {ALL_STUDIO_FIELDS.filter((f) => f.category === 'measure').map((f) => (
+                <div
+                  key={f.id}
+                  className="p-2 rounded-xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/40 text-xs flex items-center justify-between group transition hover:border-teal-500/40"
                 >
-                  <option value="salesRep">Sales Rep (พนักงานขาย)</option>
-                  <option value="category">Category (หมวดหมู่สินค้า)</option>
-                  <option value="month">Month (รอบรายเดือน)</option>
-                  <option value="customerName">Customer (รายชื่อลูกค้า)</option>
-                  <option value="none">-- ไม่จัดกลุ่ม (Raw List) --</option>
-                </select>
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <TrendingUp className="w-3 h-3 text-teal-600 dark:text-teal-400 shrink-0" />
+                    <span className="font-bold text-teal-900 dark:text-teal-200 truncate text-[11px]">{f.name}</span>
+                  </div>
+                  <button
+                    onClick={() => handleAddFieldToZone(f.id, 'values')}
+                    title="เพิ่มในค่าตัวเลข (Values)"
+                    className="px-1.5 py-0.5 rounded bg-teal-600 text-[10px] font-bold text-white shadow-2xs cursor-pointer shrink-0"
+                  >
+                    + Val
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right 3 Cols: The 4 Drop Zones + Live Pivot Table Canvas */}
+        <div className="lg:col-span-3 space-y-4 w-full min-w-0">
+          {/* 4 Interactive Drop Zones */}
+          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* 1. Rows Zone */}
+              <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-2 min-h-[90px]">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>แถว (Rows)</span>
+                  <span className="text-[10px] text-slate-400">{rowFields.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {rowFields.map((fId) => {
+                    const f = ALL_STUDIO_FIELDS.find((item) => item.id === fId);
+                    return (
+                      <span
+                        key={fId}
+                        className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 text-xs font-semibold border border-teal-200 dark:border-teal-800 shadow-2xs"
+                      >
+                        <GripVertical className="w-2.5 h-2.5 text-teal-500 shrink-0" />
+                        <span className="truncate">{f?.name.split(' ')[0] || fId}</span>
+                        <button
+                          onClick={() => handleRemoveField(fId, 'rows')}
+                          className="hover:text-rose-500 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                  {rowFields.length === 0 && (
+                    <span className="text-[11px] text-slate-400 italic">คลิกเลือกจากคลังฟิลด์ซ้าย</span>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="text-[11px] text-slate-400 font-medium block mb-1">Aggregation Function:</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['sum', 'avg', 'count'] as const).map((agg) => (
-                    <button
-                      key={agg}
-                      onClick={() => setAggregation(agg)}
-                      className={`py-1.5 rounded-xl uppercase font-bold text-[10px] transition cursor-pointer ${
-                        aggregation === agg
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/20'
-                          : 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                      }`}
+              {/* 2. Columns Zone */}
+              <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-2 min-h-[90px]">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>คอลัมน์ (Columns)</span>
+                  <span className="text-[10px] text-slate-400">{columnFields.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {columnFields.map((fId) => {
+                    const f = ALL_STUDIO_FIELDS.find((item) => item.id === fId);
+                    return (
+                      <span
+                        key={fId}
+                        className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-800 shadow-2xs"
+                      >
+                        <GripVertical className="w-2.5 h-2.5 text-blue-500 shrink-0" />
+                        <span className="truncate">{f?.name.split(' ')[0] || fId}</span>
+                        <button
+                          onClick={() => handleRemoveField(fId, 'columns')}
+                          className="hover:text-rose-500 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                  {columnFields.length === 0 && (
+                    <span className="text-[11px] text-slate-400 italic">เลือกเดือน/ไตรมาส</span>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Values Zone */}
+              <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-2 min-h-[90px]">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>ค่าตัวเลข (Values)</span>
+                  <span className="text-[10px] text-slate-400">{valueFields.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {valueFields.map((fId) => {
+                    const f = ALL_STUDIO_FIELDS.find((item) => item.id === fId);
+                    return (
+                      <span
+                        key={fId}
+                        className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800 shadow-2xs"
+                      >
+                        <span className="truncate">Σ {f?.name.split(' ')[0] || fId}</span>
+                        <button
+                          onClick={() => handleRemoveField(fId, 'values')}
+                          className="hover:text-rose-500 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. Filters Zone */}
+              <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-2 min-h-[90px]">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>ตัวกรอง (Filters)</span>
+                  <button
+                    onClick={() => handleAddFieldToZone('category', 'filters')}
+                    className="text-[10px] text-teal-600 dark:text-teal-400 font-bold hover:underline cursor-pointer"
+                  >
+                    + Filter
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {filters.map((flt) => (
+                    <span
+                      key={flt.id}
+                      className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-semibold border border-amber-200 dark:border-amber-800 shadow-2xs"
                     >
-                      {agg}
-                    </button>
+                      <Filter className="w-2.5 h-2.5 text-amber-500" />
+                      <span>{flt.field}: All</span>
+                      <button
+                        onClick={() => setFilters(filters.filter((f) => f.id !== flt.id))}
+                        className="hover:text-rose-500 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
                   ))}
+                  {filters.length === 0 && (
+                    <span className="text-[11px] text-slate-400 italic">ไม่จำกัดตัวกรอง</span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Step 3: Visual Filter Builder */}
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 w-full min-w-0 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
-              <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span>3. ตัวกรองเงื่อนไข (Filter Builder)</span>
-              </span>
-              <button
-                onClick={addFilter}
-                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Plus className="w-3 h-3" />
-                <span>เพิ่ม Filter</span>
-              </button>
-            </div>
-
-            {filters.length === 0 ? (
-              <div className="text-[11px] text-slate-400 text-center py-2">
-                ยังไม่มีการกำหนด Filter (ประมวลผลข้อมูลทั้งหมด)
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
-                {filters.map((f) => (
-                  <div
-                    key={f.id}
-                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2 text-xs"
-                  >
-                    <select
-                      value={f.field}
-                      onChange={(e) => updateFilter(f.id, { field: e.target.value })}
-                      className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="category">Category</option>
-                      <option value="salesRep">Sales Rep</option>
-                      <option value="status">Status</option>
-                      <option value="netAmount">Net Amount</option>
-                    </select>
-
-                    <select
-                      value={f.operator}
-                      onChange={(e) => updateFilter(f.id, { operator: e.target.value as any })}
-                      className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="equals">=</option>
-                      <option value="greater_than">&gt;</option>
-                      <option value="less_than">&lt;</option>
-                      <option value="contains">contains</option>
-                    </select>
-
-                    <input
-                      type="text"
-                      value={f.value}
-                      onChange={(e) => updateFilter(f.id, { value: e.target.value })}
-                      className="flex-1 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] focus:outline-none focus:border-blue-500"
-                    />
-
-                    <button
-                      onClick={() => removeFilter(f.id)}
-                      className="text-slate-400 hover:text-rose-500 p-1 transition cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right 2 Cols: Visualization Selector & Interactive Preview Canvas */}
-        <div className="lg:col-span-2 space-y-4 w-full min-w-0">
-          {/* Chart Type Selector Header */}
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 w-full min-w-0 shadow-sm">
-            <span className="text-xs font-bold text-slate-900 dark:text-white">รูปแบบการแสดงผล (Visualization):</span>
+          {/* Visualization Controls */}
+          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+            <span className="text-xs font-bold text-slate-900 dark:text-white">มุมมองการวิเคราะห์ (View Layout):</span>
             <div className="flex flex-wrap gap-1.5">
               {[
+                { type: 'pivot', label: 'Pivot Matrix (ตารางไขว้)', icon: FileSpreadsheet },
                 { type: 'combo', label: 'Combo (Bar+Line)', icon: BarChart3 },
                 { type: 'bar', label: 'Bar Chart', icon: BarChart3 },
-                { type: 'donut', label: 'Donut', icon: PieIcon },
-                { type: 'table', label: 'Detailed Table', icon: TableIcon },
-                { type: 'pivot', label: 'Pivot Matrix', icon: FileSpreadsheet },
+                { type: 'donut', label: 'Donut Share', icon: PieIcon },
               ].map((v) => {
                 const Icon = v.icon;
+                const isActive = visualization === v.type;
                 return (
                   <button
                     key={v.type}
                     onClick={() => setVisualization(v.type as any)}
                     className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                      visualization === v.type
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/20'
-                        : 'bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      isActive
+                        ? 'bg-teal-600 text-white shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -418,34 +498,16 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
             </div>
           </div>
 
-          {/* Live Chart Canvas */}
-          {visualization !== 'table' && visualization !== 'pivot' && (
-            <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 w-full min-w-0 shadow-sm">
-              <div className="flex justify-between items-center text-xs">
-                <h4 className="font-bold text-slate-900 dark:text-white">Visual Analytics Preview</h4>
-                <span className="text-blue-600 dark:text-blue-400 font-semibold text-[11px] bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 px-2 py-0.5 rounded-full">
-                  Grouped by: {groupByField}
-                </span>
-              </div>
-
+          {/* Chart View if selected */}
+          {visualization !== 'pivot' && (
+            <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 shadow-xs">
               <div className="h-64 w-full">
                 {visualization === 'combo' && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={groupedData}>
-                      <XAxis dataKey="groupKey" stroke="#94a3b8" fontSize={11} />
-                      <YAxis
-                        yAxisId="left"
-                        stroke="#94a3b8"
-                        fontSize={11}
-                        tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`}
-                      />
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        stroke="#64748b"
-                        fontSize={11}
-                        tickFormatter={(v) => `${v}%`}
-                      />
+                    <ComposedChart data={pivotMatrix.rows}>
+                      <XAxis dataKey="rowKey" stroke="#94a3b8" fontSize={11} />
+                      <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={11} tickFormatter={(v) => `${v}%`} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: '#0f172a',
@@ -454,7 +516,7 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
                           color: '#fff',
                         }}
                       />
-                      <Bar yAxisId="left" dataKey="netAmount" fill="#3b82f6" radius={[6, 6, 0, 0]} name="ยอดขาย" />
+                      <Bar yAxisId="left" dataKey="netAmount" fill="#0d9488" radius={[6, 6, 0, 0]} name="ยอดขายสุทธิ" />
                       <Line yAxisId="right" type="monotone" dataKey="marginPct" stroke="#10b981" strokeWidth={3} name="Margin %" />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -462,8 +524,8 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
 
                 {visualization === 'bar' && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={groupedData}>
-                      <XAxis dataKey="groupKey" stroke="#94a3b8" fontSize={11} />
+                    <BarChart data={pivotMatrix.rows}>
+                      <XAxis dataKey="rowKey" stroke="#94a3b8" fontSize={11} />
                       <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`} />
                       <Tooltip
                         contentStyle={{
@@ -473,7 +535,7 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
                           color: '#fff',
                         }}
                       />
-                      <Bar dataKey="netAmount" fill="#3b82f6" radius={[6, 6, 0, 0]} name="ยอดขาย" />
+                      <Bar dataKey="netAmount" fill="#0d9488" radius={[6, 6, 0, 0]} name="ยอดขาย" />
                       <Bar dataKey="grossProfit" fill="#10b981" radius={[6, 6, 0, 0]} name="กำไรขั้นต้น" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -483,19 +545,19 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={groupedData}
+                        data={pivotMatrix.rows}
                         dataKey="netAmount"
-                        nameKey="groupKey"
+                        nameKey="rowKey"
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
+                        innerRadius={55}
+                        outerRadius={85}
                         paddingAngle={3}
                       >
-                        {groupedData.map((_, i) => (
+                        {pivotMatrix.rows.map((_, i) => (
                           <Cell
                             key={i}
-                            fill={['#3b82f6', '#10b981', '#6366f1', '#8b5cf6', '#ec4899'][i % 5]}
+                            fill={['#0d9488', '#059669', '#2563eb', '#4f46e5', '#d97706'][i % 5]}
                           />
                         ))}
                       </Pie>
@@ -514,74 +576,99 @@ export const ReportStudioView: React.FC<ReportStudioViewProps> = ({
             </div>
           )}
 
-          {/* Live Data Grid Table */}
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 w-full min-w-0 shadow-sm">
+          {/* The Live Pivot Matrix Table */}
+          <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 space-y-3 shadow-xs">
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Live Data Results Table</h4>
-                <p className="text-[11px] text-slate-400">ผลการประมวลผลตามฟิลด์และตัวกรองที่เลือกไว้</p>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Live Pivot Matrix Grid</h4>
+                <p className="text-[11px] text-slate-400">
+                  คำนวณสดตามแกนแถว: <span className="font-semibold text-teal-600 dark:text-teal-400">{rowFields.join(' › ') || 'ทั้งหมด'}</span>
+                  {columnFields.length > 0 && ` | แกนคอลัมน์: ${columnFields.join(', ')}`}
+                </p>
               </div>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 font-mono font-bold text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
-                {groupedData.length} Rows
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 font-mono font-bold text-teal-700 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/40">
+                {pivotMatrix.rows.length} กลุ่ม
               </span>
             </div>
 
-            <div className="overflow-x-auto max-h-80 custom-scrollbar w-full min-w-0">
-              <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[550px]">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-semibold sticky top-0 border-b border-slate-100 dark:border-slate-800">
+            <div className="overflow-x-auto max-h-96 custom-scrollbar w-full min-w-0">
+              <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[620px]">
+                <thead className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 uppercase font-semibold sticky top-0 border-b border-slate-200/80 dark:border-slate-800">
                   <tr>
-                    {groupByField !== 'none' ? (
-                      <>
-                        <th className="py-2.5 px-3">{groupByField.toUpperCase()} Group</th>
-                        <th className="py-2.5 px-3 text-right">Count</th>
-                        <th className="py-2.5 px-3 text-right">Net Sales</th>
-                        <th className="py-2.5 px-3 text-right">COGS</th>
-                        <th className="py-2.5 px-3 text-right">Gross Profit</th>
-                        <th className="py-2.5 px-3 text-right">Margin %</th>
-                      </>
-                    ) : (
-                      selectedFields.map((fId) => (
-                        <th key={fId} className="py-2.5 px-3">
-                          {AVAILABLE_FIELDS.find((f) => f.id === fId)?.label || fId}
-                        </th>
-                      ))
-                    )}
+                    <th className="py-2.5 px-3">
+                      {rowFields.map((fId) => ALL_STUDIO_FIELDS.find((f) => f.id === fId)?.name.split(' ')[0]).join(' / ') || 'กลุ่ม'}
+                    </th>
+                    <th className="py-2.5 px-3 text-right">จำนวนบิล</th>
+                    {/* Dynamic Columns */}
+                    {pivotMatrix.colKeys.map((cKey) => (
+                      <th key={cKey} className="py-2.5 px-3 text-right font-bold text-blue-600 dark:text-blue-400">
+                        {cKey}
+                      </th>
+                    ))}
+                    <th className="py-2.5 px-3 text-right font-bold">ยอดขายรวม</th>
+                    <th className="py-2.5 px-3 text-right">ต้นทุน COGS</th>
+                    <th className="py-2.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400">กำไรขั้นต้น</th>
+                    <th className="py-2.5 px-3 text-right font-bold">Margin %</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {groupedData.map((row: any, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
-                      {groupByField !== 'none' ? (
-                        <>
-                          <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">{row.groupKey}</td>
-                          <td className="py-2.5 px-3 text-right font-medium text-slate-500">{row.count}</td>
-                          <td className="py-2.5 px-3 text-right font-bold text-blue-600 dark:text-blue-400 font-mono">
-                            +฿{Number(row.netAmount || 0).toLocaleString()}
-                          </td>
-                          <td className="py-2.5 px-3 text-right text-slate-400 font-mono">
-                            ฿{Number(row.cogs || 0).toLocaleString()}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                            ฿{Number(row.grossProfit || 0).toLocaleString()}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-white font-mono">
-                            {row.marginPct}%
-                          </td>
-                        </>
-                      ) : (
-                        selectedFields.map((fId) => (
-                          <td key={fId} className="py-2.5 px-3">
-                            {fId === 'netAmount' || fId === 'cogs' || fId === 'grossProfit'
-                              ? `฿${Number(row[fId] || 0).toLocaleString()}`
-                              : fId === 'marginPct'
-                              ? `${row[fId]}%`
-                              : String(row[fId] || '-')}
-                          </td>
-                        ))
-                      )}
+                  {pivotMatrix.rows.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <ChevronRight className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                        <span>{row.rowKey}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-400">{row.count}</td>
+                      {/* Dynamic Columns values */}
+                      {pivotMatrix.colKeys.map((cKey) => (
+                        <td key={cKey} className="py-2.5 px-3 text-right font-mono font-medium text-slate-700 dark:text-slate-300">
+                          {row.colBreakdown[cKey] ? `฿${row.colBreakdown[cKey].toLocaleString()}` : '-'}
+                        </td>
+                      ))}
+                      <td className="py-2.5 px-3 text-right font-bold text-teal-600 dark:text-teal-400 font-mono">
+                        ฿{row.netAmount.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-400 font-mono">
+                        ฿{row.cogs.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        ฿{row.grossProfit.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-white font-mono">
+                        {row.marginPct}%
+                      </td>
                     </tr>
                   ))}
                 </tbody>
+                {/* Grand Total Footer Row */}
+                <tfoot className="bg-slate-100/80 dark:bg-slate-850 font-bold border-t-2 border-slate-300 dark:border-slate-700">
+                  <tr>
+                    <td className="py-3 px-3 text-slate-900 dark:text-white">รวมทั้งสิ้น (Grand Total)</td>
+                    <td className="py-3 px-3 text-right text-slate-500">
+                      {pivotMatrix.rows.reduce((acc, r) => acc + r.count, 0)}
+                    </td>
+                    {pivotMatrix.colKeys.map((cKey) => {
+                      const colSum = pivotMatrix.rows.reduce((acc, r) => acc + (r.colBreakdown[cKey] || 0), 0);
+                      return (
+                        <td key={cKey} className="py-3 px-3 text-right font-mono text-blue-600 dark:text-blue-400">
+                          ฿{colSum.toLocaleString()}
+                        </td>
+                      );
+                    })}
+                    <td className="py-3 px-3 text-right text-teal-700 dark:text-teal-300 font-mono">
+                      ฿{pivotMatrix.grandTotals.netAmount.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-right text-slate-500 font-mono">
+                      ฿{pivotMatrix.rows.reduce((acc, r) => acc + r.cogs, 0).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-right text-emerald-700 dark:text-emerald-300 font-mono">
+                      ฿{pivotMatrix.grandTotals.grossProfit.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-right text-slate-900 dark:text-white font-mono">
+                      {pivotMatrix.grandTotals.marginPct}%
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>

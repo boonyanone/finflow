@@ -68,12 +68,58 @@ export async function parseExcelFile(file: File): Promise<ParsedWorkbook> {
 
 export function autoMapColumns(headers: string[], firstRow: any[]): ColumnMapping[] {
   return headers.map((header, idx) => {
-    const h = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const rawH = String(header || '').trim();
+    const h = rawH.toLowerCase().replace(/[^a-z0-9]/g, '');
     const sampleVal = firstRow[idx] !== undefined ? String(firstRow[idx]) : '';
     let target = 'ignore';
     let confidence = 50;
 
-    if (h.includes('inv') && (h.includes('no') || h.includes('num') || h.includes('id') || h.includes('ref') || h.includes('code'))) {
+    // Check Thai keywords first
+    if (/เลขที่|เอกสาร|บิล|ใบแจ้งหนี้|inv/i.test(rawH) && !/วันที่/i.test(rawH)) {
+      target = 'invoiceNo';
+      confidence = 99;
+    } else if (/ครบกำหนด|due/i.test(rawH)) {
+      target = 'dueDate';
+      confidence = 98;
+    } else if (/วันที่|date/i.test(rawH) && !/ครบกำหนด/i.test(rawH)) {
+      target = 'date';
+      confidence = 98;
+    } else if (/ลูกค้า|customer|client/i.test(rawH) && !/รหัสลูกค้า/i.test(rawH)) {
+      target = 'customerName';
+      confidence = 98;
+    } else if (/พนักงานขาย|ผู้แทนขาย|เซล|sales|rep|seller/i.test(rawH)) {
+      target = 'salesRep';
+      confidence = 96;
+    } else if (/หมวดหมู่|กลุ่มสินค้า|category|group/i.test(rawH)) {
+      target = 'category';
+      confidence = 95;
+    } else if (/รหัสสินค้า|sku|item\s*code|part\s*no/i.test(rawH)) {
+      target = 'itemCode';
+      confidence = 98;
+    } else if (/ชื่อสินค้า|รายละเอียด|รายการ|description|item\s*name/i.test(rawH)) {
+      target = 'itemDescription';
+      confidence = 96;
+    } else if (/จำนวน|ปริมาณ|qty|quantity/i.test(rawH)) {
+      target = 'quantity';
+      confidence = 98;
+    } else if (/ราคาต่อหน่วย|ราคา\/หน่วย|unit\s*price|price/i.test(rawH)) {
+      target = 'unitPrice';
+      confidence = 95;
+    } else if (/ยอดรวม|ยอดขาย|มูลค่า|net|amount|total|revenue/i.test(rawH) && !/ต้นทุน/i.test(rawH) && !/ชำระ/i.test(rawH)) {
+      target = 'netAmount';
+      confidence = 98;
+    } else if (/ต้นทุน|cogs|cost/i.test(rawH)) {
+      target = 'cogs';
+      confidence = 98;
+    } else if (/ชำระแล้ว|รับชำระ|paid/i.test(rawH)) {
+      target = 'paidAmount';
+      confidence = 95;
+    } else if (/สถานะ|status|state/i.test(rawH)) {
+      target = 'status';
+      confidence = 95;
+    }
+    // Fallback to English standard substring checks
+    else if (h.includes('inv') && (h.includes('no') || h.includes('num') || h.includes('id') || h.includes('ref') || h.includes('code'))) {
       target = 'invoiceNo';
       confidence = 98;
     } else if (h.includes('date') && !h.includes('due')) {

@@ -14,12 +14,19 @@ import {
   RefreshCw,
   Download,
   Building2,
+  FileText,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { parseExcelFile, ParsedWorkbook, TARGET_FIELDS, transformToCanonical } from '../utils/excelParser';
 import { ColumnMapping, InvoiceRecord, MappingProfile } from '../types';
+import {
+  downloadSage50DemoExcel,
+  downloadExpressDemoExcel,
+  downloadBlankStarterTemplate,
+  downloadInventoryDemoExcel,
+} from '../utils/demoExcelGenerator';
 import { downloadColdRoomExcelTemplate } from '../utils/coldRoomExportHelper';
-import { SIAM_COLD_ROOM_INVOICES } from '../data/sampleSage50Data';
+import { SIAM_COLD_ROOM_INVOICES, INITIAL_INVOICES } from '../data/sampleSage50Data';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -87,8 +94,89 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     );
   };
 
-  const handleLoadColdRoomDataset = () => {
-    // Generate realistic Thai Cold Storage Wall & Panel dataset
+  const handleLoadDemoDataset = (type: 'siam_cooling' | 'express' | 'sage') => {
+    if (type === 'express') {
+      const expressHeaders = [
+        'เลขที่เอกสาร',
+        'วันที่เอกสาร',
+        'วันครบกำหนด',
+        'ชื่อลูกค้า',
+        'พนักงานขาย',
+        'หมวดหมู่',
+        'รหัสสินค้า',
+        'ชื่อสินค้า/รายการ',
+        'จำนวน',
+        'ราคาต่อหน่วย',
+        'ยอดขายสุทธิ',
+        'ต้นทุนขาย',
+        'ยอดชำระแล้ว',
+        'สถานะบิล',
+      ];
+
+      const expressRows = INITIAL_INVOICES.map((inv) => [
+        inv.invoiceNo,
+        inv.date,
+        inv.dueDate,
+        inv.customerName,
+        inv.salesRep,
+        inv.category,
+        inv.itemCode,
+        inv.itemDescription,
+        inv.quantity,
+        inv.unitPrice,
+        inv.netAmount,
+        inv.cogs,
+        inv.paidAmount,
+        inv.status,
+      ]);
+
+      const mockMappings: ColumnMapping[] = expressHeaders.map((h, i) => ({
+        sourceColumn: h,
+        targetField: [
+          'invoiceNo',
+          'date',
+          'dueDate',
+          'customerName',
+          'salesRep',
+          'category',
+          'itemCode',
+          'itemDescription',
+          'quantity',
+          'unitPrice',
+          'netAmount',
+          'cogs',
+          'paidAmount',
+          'status',
+        ][i],
+        sampleValue: String(expressRows[0][i]),
+        status: 'matched',
+        confidence: 99,
+      }));
+
+      setParsedData({
+        fileName: 'Express_Accounting_Sample_Data.xlsx',
+        sheetNames: ['รายงานยอดขายและลูกหนี้_Express'],
+        selectedSheet: 'รายงานยอดขายและลูกหนี้_Express',
+        rawHeaders: expressHeaders,
+        rawRows: expressRows,
+        mappings: mockMappings,
+        validation: {
+          totalRows: expressRows.length,
+          validRows: expressRows.length,
+          warningRows: 0,
+          errorRows: 0,
+          qualityScore: 100,
+          errors: [],
+          warnings: [],
+        },
+      });
+      setSelectedSheet('รายงานยอดขายและลูกหนี้_Express');
+      setCurrentMappings(mockMappings);
+      setStep('mapping');
+      return;
+    }
+
+    // Default Siam Cooling Cold Room dataset
     const coldRoomHeaders = [
       'Project_Invoice_No',
       'Billing_Date',
@@ -163,13 +251,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         warnings: [],
       },
     });
-    setCurrentMappings(mockMappings);
     setSelectedSheet('Invoices_Line_Items');
+    setCurrentMappings(mockMappings);
     setStep('mapping');
-  };
-
-  const handleLoadDemoDataset = () => {
-    handleLoadColdRoomDataset();
   };
 
   const handleCommitImport = () => {
@@ -283,43 +367,138 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 />
               </div>
 
-              {/* Demo Dataset Quick Loader - Thai Cold Storage Company */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200/80 dark:border-blue-800/60 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start space-x-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
-                      <Building2 className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-2">
-                        <span>ชุดข้อมูลตัวอย่าง: บจก. สยาม คูลลิ่งฯ (รับทำผนังห้องเย็น)</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/60 dark:border-emerald-800/40">
-                          แนะนำ
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                        โครงสร้างจริงของธุรกิจรับทำผนังห้องเย็น/แผ่นฉนวน Sandwich Panel (PIR, Rockwool, ประตูห้องเย็น, ค่าแรงติดตั้ง) พร้อมรายชื่อโรงงานลูกค้า 16 โครงการ
-                      </p>
-                    </div>
-                  </div>
+              {/* Demo Dataset Hub */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center gap-1.5">
+                    <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>หรือดาวน์โหลดไฟล์ตัวอย่าง .xlsx เพื่อทดลองนำเข้า (Demo Suites)</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">เลือกรูปแบบที่ต้องการ</span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                  <button
-                    onClick={handleLoadColdRoomDataset}
-                    className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition shrink-0 cursor-pointer shadow-sm shadow-blue-500/20"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>นำเข้าข้อมูลผนังห้องเย็นทันที</span>
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Card 1: Siam Cooling Cold Room */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-50/70 to-indigo-50/60 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/70 dark:border-blue-800/50 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>บจก. สยาม คูลลิ่งฯ</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">
+                          งานห้องเย็น
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        16 โครงการผนัง PIR, ประตูสแตนเลส, และลูกหนี้ค้างชำระจริง
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleLoadDemoDataset('siam_cooling')}
+                        className="flex-1 flex items-center justify-center space-x-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold transition cursor-pointer shadow-xs"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>ทดลองนำเข้าทันที</span>
+                      </button>
+                      <button
+                        onClick={downloadColdRoomExcelTemplate}
+                        title="ดาวน์โหลดไฟล์ .xlsx"
+                        className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      </button>
+                    </div>
+                  </div>
 
-                  <button
-                    onClick={downloadColdRoomExcelTemplate}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition shrink-0 cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>ดาวน์โหลดไฟล์ .xlsx ตัวอย่าง</span>
-                  </button>
+                  {/* Card 2: Express Accounting Thai Format */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/70 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200/70 dark:border-emerald-800/50 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Express ภาษาไทย</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                          โปรแกรมไทย
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        หัวตารางภาษาไทย: เลขที่เอกสาร, วันครบกำหนด, ยอดขาย, กำไร
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleLoadDemoDataset('express')}
+                        className="flex-1 flex items-center justify-center space-x-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition cursor-pointer shadow-xs"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>ทดลองนำเข้าทันที</span>
+                      </button>
+                      <button
+                        onClick={downloadExpressDemoExcel}
+                        title="ดาวน์โหลดไฟล์ .xlsx"
+                        className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Sage 50 US Format */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Database className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                          <span>Sage 50 US / Global</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                          Global ERP
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        คอลัมน์มาตรฐาน Invoice No, Customer ID, AR Balance Due
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={downloadSage50DemoExcel}
+                        className="w-full flex items-center justify-center space-x-1.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold transition cursor-pointer"
+                      >
+                        <Download className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <span>ดาวน์โหลด .xlsx</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Blank Template */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span>Starter Blank Template</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold">
+                          ไฟล์ว่าง
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        เทมเพลตพร้อมหัวตาราง 2 ภาษา นำไปกรอกข้อมูลจริงได้ทันที
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={downloadBlankStarterTemplate}
+                        className="w-full flex items-center justify-center space-x-1.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold transition cursor-pointer"
+                      >
+                        <Download className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span>ดาวน์โหลด Template ว่าง</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

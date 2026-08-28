@@ -22,6 +22,8 @@ export interface CompanyWorkspace {
   fiscalYear: string;
   lastSyncTime: string;
   syncStatus: 'connected' | 'syncing' | 'idle' | 'warning';
+  isDemo?: boolean;
+  isImported?: boolean;
 }
 
 // 02 Canonical Data Model Entities
@@ -180,14 +182,80 @@ export interface ReportDefinition {
 
 // Feature Toggles
 export interface FeatureToggles {
-  coreSales: boolean;
+  coreSales?: boolean;
   aiCopilot: boolean;
   arAging: boolean;
   inventoryValuation: boolean;
   reportStudio: boolean;
+  cashFlowForecast: boolean;
   odbcSync: boolean;
-  auditLogs: boolean;
-  multiCompany: boolean;
+  auditLogs?: boolean;
+  multiCompany?: boolean;
+}
+
+// Cash Flow & What-If Forecasting Types
+export interface CashFlowScenarioParams {
+  paymentDelayDays: number; // e.g. -15 to +45 days
+  salesGrowthPct: number; // e.g. -30% to +50%
+  earlyPaymentDiscountPct: number; // e.g. 0% to 5%
+  earlyCollectionAdoptionPct: number; // e.g. 0% to 100%
+  cogsInflationPct: number; // e.g. -10% to +20%
+  openingCashBalance: number; // e.g. 1,500,000 THB
+  monthlyFixedOpex: number; // e.g. 350,000 THB
+  minSafetyCash: number; // e.g. 500,000 THB
+}
+
+export interface WeeklyCashBucket {
+  weekKey: string;
+  weekLabel: string;
+  startDate: string;
+  endDate: string;
+  baseInflow: number;
+  scenarioInflow: number;
+  worstCaseInflow: number;
+  bestCaseInflow: number;
+  projectedOutflow: number;
+  netCashFlow: number;
+  closingCash: number;
+  safetyBuffer: number;
+  riskStatus: 'Safe' | 'Moderate' | 'Tight' | 'Deficit';
+}
+
+export interface CustomerCashInflowItem {
+  customerId: string;
+  customerName: string;
+  invoiceNo: string;
+  invoiceDate: string;
+  originalDueDate: string;
+  adjustedDueDate: string;
+  amount: number;
+  outstandingAmount: number;
+  overdueDays: number;
+  riskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
+  expectedProbability: number;
+  expectedInflow: number;
+  discountEligible: boolean;
+  discountedAmount: number;
+}
+
+// Enterprise White-Label & Theme Branding Types
+export type ThemePresetId = 'classic-original' | 'teal-modern' | 'navy-corporate' | 'emerald-sage' | 'indigo-tech' | 'obsidian-luxury' | 'light-minimal';
+
+export interface ThemeConfig {
+  id: ThemePresetId;
+  name: string;
+  brandName: string;
+  brandSubtitle: string;
+  logoText: string;
+  companyName: string;
+  accentColor: string; // Hex for charts/buttons
+  accentClass: 'teal' | 'blue' | 'emerald' | 'indigo' | 'slate' | 'amber';
+  sidebarStyle: 'classic-dark' | 'deep-slate' | 'midnight-navy' | 'forest-dark' | 'pure-dark' | 'light-clean' | 'slate-soft';
+  density: 'airy' | 'comfortable' | 'compact';
+  borderRadius: 'rounded-xl' | 'rounded-2xl' | 'rounded-lg' | 'rounded-none';
+  cardStyle: 'glass-flat' | 'solid-white' | 'border-crisp';
+  showDataHealthBadge: boolean;
+  customHeaderTitle?: string;
 }
 
 // Global Filter State

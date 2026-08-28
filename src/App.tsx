@@ -10,6 +10,7 @@ import { DataHealthModal } from './components/DataHealthModal';
 // Views
 import { DashboardView } from './views/DashboardView';
 import { ArAgingView } from './views/ArAgingView';
+import { CashFlowForecastView } from './views/CashFlowForecastView';
 import { InventoryView } from './views/InventoryView';
 import { CustomFieldMappingView } from './views/CustomFieldMappingView';
 import { ReportStudioView } from './views/ReportStudioView';
@@ -41,13 +42,16 @@ import {
   UserRole,
   GlobalFilterState,
   CompanyWorkspace,
+  ThemeConfig,
 } from './types';
 import { fetchAiExecutiveInsight } from './services/geminiService';
+import { loadSavedTheme, saveTheme } from './utils/themePresets';
 
 export const App: React.FC = () => {
   // App state
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(loadSavedTheme());
   const [lang, setLang] = useState<'th' | 'en'>('th');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
@@ -55,15 +59,36 @@ export const App: React.FC = () => {
   const [isDataHealthOpen, setIsDataHealthOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Companies / Workspaces
-  const [companies, setCompanies] = useState<CompanyWorkspace[]>(INITIAL_COMPANIES);
-  const [currentCompany, setCurrentCompany] = useState<CompanyWorkspace>(INITIAL_COMPANIES[0]);
+  const handleUpdateTheme = (newConfig: ThemeConfig) => {
+    setThemeConfig(newConfig);
+    saveTheme(newConfig);
+  };
 
-  // Data Collections
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>(INITIAL_INVOICES);
-  const [arBuckets, setArBuckets] = useState<ArAgingBucket[]>(INITIAL_AR_AGING);
-  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
-  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+  // Companies / Workspaces & Data Source Mode
+  const EMPTY_COMPANY: CompanyWorkspace = {
+    id: 'comp-unloaded',
+    name: 'Workspace ว่าง (รอการนำเข้าข้อมูล)',
+    sageEdition: 'Sage 50 / Excel Ready for Import',
+    currency: 'THB (฿)',
+    fiscalYear: '2026',
+    lastSyncTime: 'รอการนำเข้าไฟล์',
+    syncStatus: 'idle',
+  };
+
+  const [dataSourceMode, setDataSourceMode] = useState<'empty' | 'demo' | 'imported'>('empty');
+  const [importedFileName, setImportedFileName] = useState<string>('');
+
+  const [companies, setCompanies] = useState<CompanyWorkspace[]>([
+    EMPTY_COMPANY,
+    ...INITIAL_COMPANIES,
+  ]);
+  const [currentCompany, setCurrentCompany] = useState<CompanyWorkspace>(EMPTY_COMPANY);
+
+  // Data Collections - Start completely empty for clean-slate initial user experience
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [arBuckets, setArBuckets] = useState<ArAgingBucket[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [mappingProfiles, setMappingProfiles] = useState<MappingProfile[]>(INITIAL_MAPPING_PROFILES);
   const [savedReports, setSavedReports] = useState<ReportDefinition[]>(INITIAL_STANDARD_REPORTS);
   const [activeStudioReport, setActiveStudioReport] = useState<ReportDefinition | undefined>(undefined);
@@ -72,6 +97,7 @@ export const App: React.FC = () => {
   const [features, setFeatures] = useState<FeatureToggles>({
     aiCopilot: true,
     arAging: true,
+    cashFlowForecast: true,
     inventoryValuation: true,
     reportStudio: true,
     odbcSync: true,
@@ -99,14 +125,49 @@ export const App: React.FC = () => {
 
   // AI Executive Insight state
   const [aiInsightText, setAiInsightText] = useState<string>(
-    'วิเคราะห์ภาพรวม บจก. สยาม คูลลิ่งฯ: ยอดขายโครงการสะสม ฿5,473,200 กำไรขั้นต้นรวม 38.3% (฿2,096,400) โดยกลุ่มแผ่น PIR ฉนวนกันไฟ และประตูห้องเย็นสแตนเลสมี Margin สูงสุดที่ 42-45% พบลูกหนี้ค้างชำระเกิน 60 วัน 1 โครงการ (บจก. เบทาฟู้ดส์ โพรเซสซิ่ง ฿368,800) อยู่ระหว่างรออนุมัติส่งมอบงานงวดสุดท้าย'
+    'ระบบ FinFlow BI พร้อมสำหรับการนำเข้าข้อมูล กรุณานำเข้าไฟล์ Excel / Sage 50 ของคุณ หรือโหลดชุดข้อมูลตัวอย่าง (DEMO DATA) เพื่อเริ่มการวิเคราะห์'
   );
   const [aiLoading, setAiLoading] = useState<boolean>(false);
 
+  const handleLoadDemoData = () => {
+    setInvoices(INITIAL_INVOICES);
+    setArBuckets(INITIAL_AR_AGING);
+    setCustomers(INITIAL_CUSTOMERS);
+    setInventory(INITIAL_INVENTORY);
+    setCurrentCompany(INITIAL_COMPANIES[0]);
+    setDataSourceMode('demo');
+    setAiInsightText(
+      'วิเคราะห์ภาพรวม บจก. สยาม คูลลิ่งฯ (DEMO): ยอดขายโครงการสะสม ฿5,473,200 กำไรขั้นต้นรวม 38.3% (฿2,096,400) โดยกลุ่มแผ่น PIR ฉนวนกันไฟ และประตูห้องเย็นสแตนเลสมี Margin สูงสุดที่ 42-45% พบลูกหนี้ค้างชำระเกิน 60 วัน 1 โครงการ (บจก. เบทาฟู้ดส์ โพรเซสซิ่ง ฿368,800) อยู่ระหว่างรออนุมัติส่งมอบงานงวดสุดท้าย'
+    );
+    showToast('✨ โหลดชุดข้อมูลตัวอย่าง (DEMO DATA) เรียบร้อยแล้ว พร้อมให้ทดสอบระบบ');
+  };
+
+  const handleClearData = () => {
+    setInvoices([]);
+    setArBuckets([]);
+    setCustomers([]);
+    setInventory([]);
+    setCurrentCompany(EMPTY_COMPANY);
+    setDataSourceMode('empty');
+    setImportedFileName('');
+    setAiInsightText('ระบบพร้อมสำหรับการนำเข้าข้อมูล กรุณานำเข้าไฟล์ Excel / Sage 50 เพื่อเริ่มการวิเคราะห์');
+    showToast('🧹 ล้างข้อมูลเรียบร้อยแล้ว — กลับสู่สถานะว่างพร้อมนำเข้าไฟล์');
+  };
+
   const handleSelectCompany = (comp: CompanyWorkspace) => {
     setCurrentCompany(comp);
-    setToastMessage(`สลับไปยัง ${comp.name} เรียบร้อยแล้ว`);
-    setTimeout(() => setToastMessage(null), 3000);
+    if (comp.id === 'comp-unloaded') {
+      handleClearData();
+    } else if (comp.isDemo) {
+      setInvoices(INITIAL_INVOICES);
+      setArBuckets(INITIAL_AR_AGING);
+      setCustomers(INITIAL_CUSTOMERS);
+      setInventory(INITIAL_INVENTORY);
+      setDataSourceMode('demo');
+      showToast(`🟠 สลับไปยังชุดข้อมูลตัวอย่าง: ${comp.name}`);
+    } else {
+      showToast(`สลับไปยัง ${comp.name} เรียบร้อยแล้ว`);
+    }
   };
 
   // Drill-down Modal State
@@ -238,8 +299,28 @@ export const App: React.FC = () => {
     sheetName: string,
     qualityScore: number
   ) => {
-    setInvoices((prev) => [...newInvoices, ...prev]);
-    showToast(`✅ นำเข้าและแมปข้อมูล Sage 50 สำเร็จ! (${newInvoices.length} รายการ)`);
+    setInvoices(newInvoices);
+    setDataSourceMode('imported');
+    setImportedFileName(fileName);
+
+    const importedCompany: CompanyWorkspace = {
+      id: `comp-imported-${Date.now()}`,
+      name: `ข้อมูลนำเข้า: ${fileName}`,
+      sageEdition: `Sage 50 / Excel (${newInvoices.length} รายการ)`,
+      currency: 'THB (฿)',
+      fiscalYear: '2026',
+      lastSyncTime: 'เพิ่งนำเข้าเมื่อสักครู่',
+      syncStatus: 'connected',
+      isImported: true,
+      isDemo: false,
+    };
+
+    setCompanies((prev) => [
+      importedCompany,
+      ...prev.filter((c) => c.id !== 'comp-unloaded' && c.id !== importedCompany.id),
+    ]);
+    setCurrentCompany(importedCompany);
+    showToast(`✅ นำเข้าข้อมูลจริงสำเร็จ! (${newInvoices.length} รายการ จาก ${fileName})`);
   };
 
   const handleOpenReportInStudio = (report: ReportDefinition) => {
@@ -280,10 +361,12 @@ export const App: React.FC = () => {
         currentCompany={currentCompany}
         companies={companies}
         onSelectCompany={handleSelectCompany}
+        themeConfig={themeConfig}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-white dark:bg-[#0b101d]">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-slate-50/60 dark:bg-[#0b101d]">
         {/* Top Header - Seamless with main canvas */}
         <Header
           activeTab={activeTab}
@@ -297,10 +380,17 @@ export const App: React.FC = () => {
           features={features}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          themeConfig={themeConfig}
         />
 
-        {/* Scrollable Main Body */}
-        <main className="flex-1 overflow-y-auto px-3 sm:px-5 md:px-7 pb-8 pt-1 space-y-5 custom-scrollbar w-full min-w-0">
+        {/* Scrollable Main Body with Dynamic Density & Spacing */}
+        <main className={`flex-1 overflow-y-auto custom-scrollbar w-full min-w-0 ${
+          themeConfig.density === 'airy'
+            ? 'px-4 sm:px-6 md:px-8 py-5 space-y-6'
+            : themeConfig.density === 'compact'
+            ? 'px-2.5 sm:px-4 py-2 space-y-3'
+            : 'px-3 sm:px-5 md:px-7 py-3 space-y-5'
+        }`}>
           {activeTab === 'dashboard' && (
             <DashboardView
               invoices={invoices}
@@ -325,6 +415,11 @@ export const App: React.FC = () => {
               onOpenDebtDraft={(customer, invoiceNo, amount, overdueDays) =>
                 setDebtModal({ isOpen: true, customer, invoiceNo, amount, overdueDays })
               }
+              dataSourceMode={dataSourceMode}
+              importedFileName={importedFileName}
+              onLoadDemoData={handleLoadDemoData}
+              onClearData={handleClearData}
+              onOpenUpload={() => setIsUploadOpen(true)}
             />
           )}
 
@@ -339,6 +434,18 @@ export const App: React.FC = () => {
               onDrillDown={(title, subtitle, records) =>
                 setDrillModal({ isOpen: true, title, subtitle, records })
               }
+            />
+          )}
+
+          {activeTab === 'cash-flow' && (
+            <CashFlowForecastView
+              invoices={invoices}
+              customers={customers}
+              arBuckets={arBuckets}
+              onOpenDebtDraft={(customer, invoiceNo, amount, overdueDays) =>
+                setDebtModal({ isOpen: true, customer, invoiceNo, amount, overdueDays })
+              }
+              onOpenCopilot={() => setIsCopilotOpen(true)}
             />
           )}
 
@@ -382,6 +489,8 @@ export const App: React.FC = () => {
               currentUser={currentUser}
               onSelectRole={handleRoleChange}
               onShowToast={showToast}
+              themeConfig={themeConfig}
+              onUpdateTheme={handleUpdateTheme}
             />
           )}
         </main>
