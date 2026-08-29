@@ -22,6 +22,7 @@ import {
   BarChart3,
   TrendingUp,
   Target,
+  Bell,
 } from 'lucide-react';
 import { UserRole, FeatureToggles, UserProfile, CompanyWorkspace, ThemeConfig } from '../types';
 
@@ -395,7 +396,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               )}
 
-              {/* 5. Inventory Valuation */}
+              {/* 5. Smart Risk Alerts & Executive Digest */}
+              {features.executiveDigest && (
+                <button
+                  onClick={() => {
+                    onSelectTab('executive-alerts');
+                    if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
+                  }}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition cursor-pointer ${getActiveItemClass(
+                    activeTab === 'executive-alerts'
+                  )}`}
+                >
+                  <Bell className="w-4 h-4 shrink-0" />
+                  <span>Smart Alerts &amp; Digest</span>
+                </button>
+              )}
+
+              {/* 6. Inventory Valuation */}
               {features.inventoryValuation && (
                 <button
                   onClick={() => {

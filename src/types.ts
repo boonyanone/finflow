@@ -187,6 +187,7 @@ export interface FeatureToggles {
   arAging: boolean;
   cashFlowForecast: boolean;
   salesCommission: boolean;
+  executiveDigest: boolean;
   inventoryValuation: boolean;
   reportStudio: boolean;
   odbcSync: boolean;
@@ -316,3 +317,74 @@ export interface GlobalFilterState {
   status: string; // 'all' | 'Paid' | 'Pending' | 'Overdue'
   searchQuery: string;
 }
+
+// Smart Alert Rules & Executive Digest Studio Types
+export type AlertSeverity = 'critical' | 'warning' | 'info';
+export type AlertCategory = 'ar_overdue' | 'credit_limit' | 'margin_drop' | 'cash_runway' | 'inventory_deadstock';
+
+export interface SmartAlertRule {
+  id: string;
+  name: string;
+  category: AlertCategory;
+  description: string;
+  severity: AlertSeverity;
+  thresholdValue: number;
+  unit: 'days' | 'thb' | 'percent' | 'times' | 'units';
+  enabled: boolean;
+  notifyChannels: ('in_app' | 'email' | 'line_webhook')[];
+  lastTriggeredAt?: string;
+  triggeredCount: number;
+}
+
+export interface ActiveFinancialAlert {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  category: AlertCategory;
+  severity: AlertSeverity;
+  title: string;
+  detail: string;
+  entityName: string; // e.g. Customer Name, Product Name, or System
+  entityId?: string;
+  metricValue: number;
+  metricLabel: string;
+  impactAmount: number; // in THB
+  suggestedAction: string;
+  actionType: 'draft_debt_letter' | 'hold_credit' | 'review_margin' | 'liquidate_stock' | 'rebalance_cash';
+  createdAt: string;
+  isRead: boolean;
+  isResolved: boolean;
+}
+
+export interface ExecutiveDigestReport {
+  periodTitle: string;
+  reportDate: string;
+  companyName: string;
+  formatType: 'weekly' | 'monthly' | 'risk_memo';
+  revenueTotal: number;
+  revenueTarget: number;
+  revenueAttainmentPct: number;
+  revenueGrowthPct: number;
+  grossProfitTotal: number;
+  grossMarginPct: number;
+  cashClosingBalance: number;
+  cashRunwayWeeks: number;
+  totalArOverdue: number;
+  criticalArCount: number;
+  topDebtorName: string;
+  topDebtorAmount: number;
+  deadStockValue: number;
+  topRepName: string;
+  topRepRevenue: number;
+  kpiCards: {
+    label: string;
+    value: string;
+    subtext: string;
+    badgeColor?: 'emerald' | 'rose' | 'blue' | 'amber' | 'slate';
+  }[];
+  aiExecutiveSummary: string;
+  positiveHighlights: string[];
+  redFlags: string[];
+  strategicRecommendations: string[];
+}
+

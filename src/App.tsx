@@ -12,6 +12,7 @@ import { DashboardView } from './views/DashboardView';
 import { ArAgingView } from './views/ArAgingView';
 import { CashFlowForecastView } from './views/CashFlowForecastView';
 import { SalesTargetCommissionView } from './views/SalesTargetCommissionView';
+import { ExecutiveDigestAlertsView } from './views/ExecutiveDigestAlertsView';
 import { InventoryView } from './views/InventoryView';
 import { CustomFieldMappingView } from './views/CustomFieldMappingView';
 import { ReportStudioView } from './views/ReportStudioView';
@@ -47,6 +48,11 @@ import {
 } from './types';
 import { fetchAiExecutiveInsight } from './services/geminiService';
 import { loadSavedTheme, saveTheme } from './utils/themePresets';
+import {
+  synthesizeInventoryFromInvoices,
+  synthesizeCustomersFromInvoices,
+  synthesizeArAgingFromInvoices,
+} from './utils/inventoryHelper';
 
 export const App: React.FC = () => {
   // App state
@@ -76,20 +82,20 @@ export const App: React.FC = () => {
     syncStatus: 'idle',
   };
 
-  const [dataSourceMode, setDataSourceMode] = useState<'empty' | 'demo' | 'imported'>('empty');
+  const [dataSourceMode, setDataSourceMode] = useState<'empty' | 'demo' | 'imported'>('demo');
   const [importedFileName, setImportedFileName] = useState<string>('');
 
   const [companies, setCompanies] = useState<CompanyWorkspace[]>([
-    EMPTY_COMPANY,
     ...INITIAL_COMPANIES,
+    EMPTY_COMPANY,
   ]);
-  const [currentCompany, setCurrentCompany] = useState<CompanyWorkspace>(EMPTY_COMPANY);
+  const [currentCompany, setCurrentCompany] = useState<CompanyWorkspace>(INITIAL_COMPANIES[0]);
 
-  // Data Collections - Start completely empty for clean-slate initial user experience
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [arBuckets, setArBuckets] = useState<ArAgingBucket[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  // Data Collections - Pre-loaded with cold room demo data for instant out-of-the-box exploration
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>(INITIAL_INVOICES);
+  const [arBuckets, setArBuckets] = useState<ArAgingBucket[]>(INITIAL_AR_AGING);
+  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
+  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [mappingProfiles, setMappingProfiles] = useState<MappingProfile[]>(INITIAL_MAPPING_PROFILES);
   const [savedReports, setSavedReports] = useState<ReportDefinition[]>(INITIAL_STANDARD_REPORTS);
   const [activeStudioReport, setActiveStudioReport] = useState<ReportDefinition | undefined>(undefined);
@@ -100,6 +106,7 @@ export const App: React.FC = () => {
     arAging: true,
     cashFlowForecast: true,
     salesCommission: true,
+    executiveDigest: true,
     inventoryValuation: true,
     reportStudio: true,
     odbcSync: true,
@@ -301,7 +308,15 @@ export const App: React.FC = () => {
     sheetName: string,
     qualityScore: number
   ) => {
+    // Intelligently derive Customers, AR Aging Buckets, and Inventory Catalog from the imported invoices
+    const synthesizedInventory = synthesizeInventoryFromInvoices(newInvoices);
+    const synthesizedCustomers = synthesizeCustomersFromInvoices(newInvoices);
+    const synthesizedArBuckets = synthesizeArAgingFromInvoices(newInvoices);
+
     setInvoices(newInvoices);
+    setInventory(synthesizedInventory);
+    setCustomers(synthesizedCustomers);
+    setArBuckets(synthesizedArBuckets);
     setDataSourceMode('imported');
     setImportedFileName(fileName);
 
@@ -322,7 +337,7 @@ export const App: React.FC = () => {
       ...prev.filter((c) => c.id !== 'comp-unloaded' && c.id !== importedCompany.id),
     ]);
     setCurrentCompany(importedCompany);
-    showToast(`✅ นำเข้าข้อมูลจริงสำเร็จ! (${newInvoices.length} รายการ จาก ${fileName})`);
+    showToast(`✅ นำเข้าข้อมูลจริงสำเร็จ! (${newInvoices.length} รายการบิล, ${synthesizedInventory.length} สินค้าคงคลัง, ${synthesizedCustomers.length} ลูกค้า)`);
   };
 
   const handleOpenReportInStudio = (report: ReportDefinition) => {
@@ -459,7 +474,40 @@ export const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 'inventory' && <InventoryView inventory={inventory} />}
+          {activeTab === 'executive-alerts' && (
+            <ExecutiveDigestAlertsView
+              invoices={invoices}
+              customers={customers}
+              inventory={inventory}
+              onOpenDebtDraft={(cust, invNo, amt, days) =>
+                setDebtModal({
+                  isOpen: true,
+                  customer: cust.name,
+                  invoiceNo: invNo,
+                  amount: amt,
+                  overdueDays: days,
+                })
+              }
+              onOpenCopilot={() => setIsCopilotOpen(true)}
+              companyName={currentCompany.name}
+            />
+          )}
+
+          {activeTab === 'inventory' && (
+            <InventoryView
+              inventory={inventory}
+              invoices={invoices}
+              onUpdateInventory={setInventory}
+              onLoadDemoInventory={handleLoadDemoData}
+              onGenerateFromInvoices={() => {
+                const synthesized = synthesizeInventoryFromInvoices(invoices);
+                setInventory(synthesized);
+                showToast(`⚡ สร้างแคตตาล็อกสินค้าคงคลังสำเร็จ ${synthesized.length} รายการจากบิลขาย`);
+              }}
+              companyName={currentCompany.name}
+              onShowToast={showToast}
+            />
+          )}
 
           {activeTab === 'field-mapping' && <CustomFieldMappingView />}
 

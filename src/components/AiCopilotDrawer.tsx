@@ -13,6 +13,8 @@ import {
   BarChart3,
   TrendingUp,
   Target,
+  Bell,
+  FileText,
 } from 'lucide-react';
 import { fetchAiChat, fetchAiReportBuilder } from '../services/geminiService';
 import { ReportDefinition } from '../types';
@@ -51,12 +53,12 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickPrompts = [
+    { text: 'ประเมินความเสี่ยงทางการเงิน 5 ด้าน และแจ้งเตือนจุดวิกฤติ', icon: Bell },
+    { text: 'ร่างบทสรุปผู้บริหารประจำสัปดาห์ (Weekly Executive Digest)', icon: FileText },
     { text: 'ประเมินกระแสเงินสดรับล่วงหน้า และจุดเสี่ยงสภาพคล่อง', icon: TrendingUp },
     { text: 'สรุปผลงานยอดขายเทียบเป้าหมาย และการคำนวณคอมมิชชั่น Q1', icon: Target },
     { text: 'สินค้าไหนกำไรดีที่สุด?', icon: Lightbulb },
     { text: 'ลูกหนี้รายไหนค้างชำระเกิน 60 วัน?', icon: AlertTriangle },
-    { text: 'เซลส์คนไหนทำยอดขายสูงสุด?', icon: Award },
-    { text: 'สร้างรายงานยอดขายแยกตามหมวดหมู่และแสดง Gross Margin', icon: BarChart3 },
   ];
 
   useEffect(() => {

@@ -481,6 +481,13 @@ export const SettingsAdminView: React.FC<SettingsAdminViewProps> = ({
                 color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border-blue-100 dark:border-blue-900/40',
               },
               {
+                key: 'executiveDigest' as const,
+                label: 'Smart Risk Alerts & Executive Digest Studio',
+                desc: 'ตรวจจับความเสี่ยงทางการเงิน 5 ด้าน และสตูดิโอสร้างบทสรุปผู้บริหารรายสัปดาห์/เดือน',
+                icon: Shield,
+                color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-100 dark:border-amber-900/40',
+              },
+              {
                 key: 'inventoryValuation' as const,
                 label: 'Inventory Valuation (FIFO & Dead Stock)',
                 desc: 'คำนวณมูลค่าสินค้าคงคลัง สินค้าเคลื่อนไหวช้า และจุดสั่งซื้อซ้ำ',
