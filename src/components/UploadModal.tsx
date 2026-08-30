@@ -15,6 +15,7 @@ import {
   Download,
   Building2,
   FileText,
+  Globe,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { parseExcelFile, ParsedWorkbook, TARGET_FIELDS, transformToCanonical } from '../utils/excelParser';
@@ -22,11 +23,13 @@ import { ColumnMapping, InvoiceRecord, MappingProfile } from '../types';
 import {
   downloadSage50DemoExcel,
   downloadExpressDemoExcel,
+  downloadFlowAccountDemoExcel,
+  downloadPeakEngineDemoExcel,
   downloadBlankStarterTemplate,
   downloadInventoryDemoExcel,
 } from '../utils/demoExcelGenerator';
-import { downloadColdRoomExcelTemplate } from '../utils/coldRoomExportHelper';
-import { SIAM_COLD_ROOM_INVOICES, INITIAL_INVOICES } from '../data/sampleSage50Data';
+import { UNIVERSAL_SME_INVOICES } from '../data/smeBusinessSectors';
+import { INITIAL_INVOICES } from '../data/sampleSage50Data';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -94,7 +97,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     );
   };
 
-  const handleLoadDemoDataset = (type: 'siam_cooling' | 'express' | 'sage') => {
+  const handleLoadDemoDataset = (type: 'universal_sme' | 'express' | 'sage' | 'flowaccount' | 'peak' | 'myaccount') => {
     if (type === 'express') {
       const expressHeaders = [
         'เลขที่เอกสาร',
@@ -176,8 +179,251 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       return;
     }
 
-    // Default Siam Cooling Cold Room dataset
-    const coldRoomHeaders = [
+    if (type === 'flowaccount') {
+      const flowHeaders = [
+        'เลขที่ใบแจ้งหนี้/ใบเสร็จ',
+        'วันที่ออกเอกสาร',
+        'วันครบกำหนดชำระ',
+        'ชื่อคู่ค้า/ลูกค้า',
+        'พนักงานขาย',
+        'หมวดหมู่',
+        'รหัสรายการ',
+        'ชื่อรายการสินค้า/บริการ',
+        'จำนวน',
+        'ราคาต่อหน่วย (บาท)',
+        'มูลค่าก่อนภาษี (THB)',
+        'ต้นทุนขาย (COGS)',
+        'ยอดชำระแล้ว',
+        'สถานะเอกสาร',
+      ];
+
+      const flowRows = INITIAL_INVOICES.map((inv) => [
+        inv.invoiceNo,
+        inv.date,
+        inv.dueDate,
+        inv.customerName,
+        inv.salesRep,
+        inv.category,
+        inv.itemCode,
+        inv.itemDescription,
+        inv.quantity,
+        inv.unitPrice,
+        inv.netAmount,
+        inv.cogs,
+        inv.paidAmount,
+        inv.status === 'Paid' ? 'เก็บเงินแล้ว' : inv.status === 'Pending' ? 'รอเก็บเงิน' : 'เลยกำหนดชำระ',
+      ]);
+
+      const mockMappings: ColumnMapping[] = flowHeaders.map((h, i) => ({
+        sourceColumn: h,
+        targetField: [
+          'invoiceNo',
+          'date',
+          'dueDate',
+          'customerName',
+          'salesRep',
+          'category',
+          'itemCode',
+          'itemDescription',
+          'quantity',
+          'unitPrice',
+          'netAmount',
+          'cogs',
+          'paidAmount',
+          'status',
+        ][i],
+        sampleValue: String(flowRows[0][i]),
+        status: 'matched',
+        confidence: 100,
+      }));
+
+      setParsedData({
+        fileName: 'FlowAccount_Sample_Invoices.xlsx',
+        sheetNames: ['FlowAccount_Sales_Report'],
+        selectedSheet: 'FlowAccount_Sales_Report',
+        rawHeaders: flowHeaders,
+        rawRows: flowRows,
+        mappings: mockMappings,
+        validation: {
+          totalRows: flowRows.length,
+          validRows: flowRows.length,
+          warningRows: 0,
+          errorRows: 0,
+          qualityScore: 100,
+          errors: [],
+          warnings: [],
+        },
+      });
+      setSelectedSheet('FlowAccount_Sales_Report');
+      setCurrentMappings(mockMappings);
+      setStep('mapping');
+      return;
+    }
+
+    if (type === 'peak') {
+      const peakHeaders = [
+        'Document_No',
+        'Issue_Date',
+        'Due_Date',
+        'Contact_Name',
+        'Sales_Person',
+        'Product_Group',
+        'Product_Code',
+        'Description',
+        'Qty',
+        'Price_Per_Unit',
+        'Subtotal_Amount',
+        'COGS_Amount',
+        'Paid_Amount',
+        'Payment_Status',
+      ];
+
+      const peakRows = INITIAL_INVOICES.map((inv) => [
+        inv.invoiceNo,
+        inv.date,
+        inv.dueDate,
+        inv.customerName,
+        inv.salesRep,
+        inv.category,
+        inv.itemCode,
+        inv.itemDescription,
+        inv.quantity,
+        inv.unitPrice,
+        inv.netAmount,
+        inv.cogs,
+        inv.paidAmount,
+        inv.status,
+      ]);
+
+      const mockMappings: ColumnMapping[] = peakHeaders.map((h, i) => ({
+        sourceColumn: h,
+        targetField: [
+          'invoiceNo',
+          'date',
+          'dueDate',
+          'customerName',
+          'salesRep',
+          'category',
+          'itemCode',
+          'itemDescription',
+          'quantity',
+          'unitPrice',
+          'netAmount',
+          'cogs',
+          'paidAmount',
+          'status',
+        ][i],
+        sampleValue: String(peakRows[0][i]),
+        status: 'matched',
+        confidence: 100,
+      }));
+
+      setParsedData({
+        fileName: 'PEAK_Engine_Sample_Data.xlsx',
+        sheetNames: ['PEAK_Sales_Journal'],
+        selectedSheet: 'PEAK_Sales_Journal',
+        rawHeaders: peakHeaders,
+        rawRows: peakRows,
+        mappings: mockMappings,
+        validation: {
+          totalRows: peakRows.length,
+          validRows: peakRows.length,
+          warningRows: 0,
+          errorRows: 0,
+          qualityScore: 100,
+          errors: [],
+          warnings: [],
+        },
+      });
+      setSelectedSheet('PEAK_Sales_Journal');
+      setCurrentMappings(mockMappings);
+      setStep('mapping');
+      return;
+    }
+
+    if (type === 'sage') {
+      const sageHeaders = [
+        'Invoice Number',
+        'Date',
+        'Due Date',
+        'Customer Name',
+        'Sales Rep',
+        'Category',
+        'Item ID',
+        'Item Description',
+        'Quantity',
+        'Unit Price',
+        'Amount',
+        'Cost of Goods Sold',
+        'Amount Paid',
+        'Status',
+      ];
+
+      const sageRows = INITIAL_INVOICES.map((inv) => [
+        inv.invoiceNo,
+        inv.date,
+        inv.dueDate,
+        inv.customerName,
+        inv.salesRep,
+        inv.category,
+        inv.itemCode,
+        inv.itemDescription,
+        inv.quantity,
+        inv.unitPrice,
+        inv.netAmount,
+        inv.cogs,
+        inv.paidAmount,
+        inv.status,
+      ]);
+
+      const mockMappings: ColumnMapping[] = sageHeaders.map((h, i) => ({
+        sourceColumn: h,
+        targetField: [
+          'invoiceNo',
+          'date',
+          'dueDate',
+          'customerName',
+          'salesRep',
+          'category',
+          'itemCode',
+          'itemDescription',
+          'quantity',
+          'unitPrice',
+          'netAmount',
+          'cogs',
+          'paidAmount',
+          'status',
+        ][i],
+        sampleValue: String(sageRows[0][i]),
+        status: 'matched',
+        confidence: 100,
+      }));
+
+      setParsedData({
+        fileName: 'Sage50_Sample_Invoices_AR.xlsx',
+        sheetNames: ['Sage50_Sales_AR'],
+        selectedSheet: 'Sage50_Sales_AR',
+        rawHeaders: sageHeaders,
+        rawRows: sageRows,
+        mappings: mockMappings,
+        validation: {
+          totalRows: sageRows.length,
+          validRows: sageRows.length,
+          warningRows: 0,
+          errorRows: 0,
+          qualityScore: 100,
+          errors: [],
+          warnings: [],
+        },
+      });
+      setSelectedSheet('Sage50_Sales_AR');
+      setCurrentMappings(mockMappings);
+      setStep('mapping');
+      return;
+    }
+
+    // Default Universal SME Trading dataset
+    const universalHeaders = [
       'Project_Invoice_No',
       'Billing_Date',
       'Due_Date',
@@ -186,7 +432,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       'Product_Group',
       'Item_SKU_Code',
       'Material_Description',
-      'Quantity_SQM_Units',
+      'Quantity_Units',
       'Unit_Price_THB',
       'Net_Sales_Amount',
       'COGS_Cost_Amount',
@@ -194,7 +440,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       'Payment_Status',
     ];
 
-    const coldRoomRows = SIAM_COLD_ROOM_INVOICES.map((inv) => [
+    const universalRows = UNIVERSAL_SME_INVOICES.map((inv) => [
       inv.invoiceNo,
       inv.date,
       inv.dueDate,
@@ -211,7 +457,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       inv.status,
     ]);
 
-    const mockMappings: ColumnMapping[] = coldRoomHeaders.map((h, i) => ({
+    const mockMappings: ColumnMapping[] = universalHeaders.map((h, i) => ({
       sourceColumn: h,
       targetField: [
         'invoiceNo',
@@ -229,21 +475,21 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         'paidAmount',
         'status',
       ][i],
-      sampleValue: String(coldRoomRows[0][i]),
+      sampleValue: String(universalRows[0][i]),
       status: 'matched',
       confidence: 100,
     }));
 
     setParsedData({
-      fileName: 'Sage50_Siam_Cooling_Panel_ColdRoom_Demo.xlsx',
+      fileName: 'Universal_SME_Trading_Sales_AR.xlsx',
       sheetNames: ['Invoices_Line_Items', 'Customer_Master', 'Stock_Valuation'],
       selectedSheet: 'Invoices_Line_Items',
-      rawHeaders: coldRoomHeaders,
-      rawRows: coldRoomRows,
+      rawHeaders: universalHeaders,
+      rawRows: universalRows,
       mappings: mockMappings,
       validation: {
-        totalRows: coldRoomRows.length,
-        validRows: coldRoomRows.length,
+        totalRows: universalRows.length,
+        validRows: universalRows.length,
         warningRows: 0,
         errorRows: 0,
         qualityScore: 100,
@@ -311,12 +557,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
             <div className="min-w-0">
               <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span>Sage 50 Data Hub &amp; Excel Ingestion</span>
+                <span>Thai Accounting &amp; Universal Excel Ingestion Hub</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold whitespace-nowrap border border-blue-200/60 dark:border-blue-800/40">
                   Step {step === 'upload' ? '1/3' : step === 'mapping' ? '2/3' : '3/3'}
                 </span>
               </h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 truncate">รองรับไฟล์ .xlsx, .xls, .csv พร้อมระบบ AI Auto-Mapping</p>
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate">รองรับ Express, FlowAccount, PEAK, myAccount, Sage 50 (.xlsx, .csv)</p>
             </div>
           </div>
           <button
@@ -378,33 +624,33 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Card 1: Siam Cooling Cold Room */}
+                  {/* Card 1: Universal Thai SME Trading & Services */}
                   <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-50/70 to-indigo-50/60 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/70 dark:border-blue-800/50 flex flex-col justify-between space-y-2.5">
                     <div>
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                          <span>บจก. สยาม คูลลิ่งฯ</span>
+                          <span>บจก. สยาม ซัพพลายฯ</span>
                         </span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">
-                          งานห้องเย็น
+                          ตัวอย่าง SME
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                        16 โครงการผนัง PIR, ประตูสแตนเลส, และลูกหนี้ค้างชำระจริง
+                        ชุดข้อมูลยอดขาย ลูกหนี้การค้า และการวิเคราะห์กำไรขั้นต้น SME
                       </p>
                     </div>
                     <div className="flex items-center gap-2 pt-1">
                       <button
-                        onClick={() => handleLoadDemoDataset('siam_cooling')}
+                        onClick={() => handleLoadDemoDataset('universal_sme')}
                         className="flex-1 flex items-center justify-center space-x-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold transition cursor-pointer shadow-xs"
                       >
                         <Sparkles className="w-3 h-3" />
                         <span>ทดลองนำเข้าทันที</span>
                       </button>
                       <button
-                        onClick={downloadColdRoomExcelTemplate}
-                        title="ดาวน์โหลดไฟล์ .xlsx"
+                        onClick={downloadBlankStarterTemplate}
+                        title="ดาวน์โหลดไฟล์แม่แบบ .xlsx"
                         className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
                       >
                         <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -418,10 +664,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
                           <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Express ภาษาไทย</span>
+                          <span>Express (เอ็กซ์เพรส)</span>
                         </span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">
-                          โปรแกรมไทย
+                          ภาษาไทย
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
@@ -446,7 +692,75 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Card 3: Sage 50 US Format */}
+                  {/* Card 3: FlowAccount Thai Format */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-cyan-50/70 to-blue-50/60 dark:from-cyan-950/30 dark:to-blue-950/30 border border-cyan-200/70 dark:border-cyan-800/50 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                          <span>FlowAccount Cloud</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300 font-bold">
+                          Cloud บัญชี
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        ใบแจ้งหนี้, ภาษีมูลค่าเพิ่ม 7%, มูลค่าก่อนภาษี และสถานะเก็บเงิน
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleLoadDemoDataset('flowaccount')}
+                        className="flex-1 flex items-center justify-center space-x-1 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold transition cursor-pointer shadow-xs"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>ทดลองนำเข้าทันที</span>
+                      </button>
+                      <button
+                        onClick={downloadFlowAccountDemoExcel}
+                        title="ดาวน์โหลดไฟล์ .xlsx"
+                        className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card 4: PEAK Engine Thai Format */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/70 to-purple-50/60 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200/70 dark:border-indigo-800/50 flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Database className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                          <span>PEAK Engine (พีก)</span>
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold">
+                          AI Engine
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        สมุดรายวันขาย, Subtotal_Amount, COGS, และ Contact_Code
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleLoadDemoDataset('peak')}
+                        className="flex-1 flex items-center justify-center space-x-1 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition cursor-pointer shadow-xs"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>ทดลองนำเข้าทันที</span>
+                      </button>
+                      <button
+                        onClick={downloadPeakEngineDemoExcel}
+                        title="ดาวน์โหลดไฟล์ .xlsx"
+                        className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Sage 50 US Format */}
                   <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5">
                     <div>
                       <div className="flex items-center justify-between">

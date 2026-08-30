@@ -50,18 +50,18 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
 
         {/* Summary metric banner */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold truncate">
-              จำนวนรายการ <span className="text-[10px] text-slate-400 font-normal">(Count)</span>
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+            <div className="text-[11px] text-slate-700 dark:text-slate-300 font-bold truncate">
+              จำนวนรายการ <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">(Count)</span>
             </div>
             <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
-              {records.length} <span className="text-xs font-semibold text-slate-400">รายการ</span>
+              {records.length} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">รายการ</span>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold truncate">
-              ยอดขายสุทธิรวม <span className="text-[10px] text-slate-400 font-normal">(Net Sales)</span>
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+            <div className="text-[11px] text-slate-700 dark:text-slate-300 font-bold truncate">
+              ยอดขายสุทธิรวม <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">(Net Sales)</span>
             </div>
             <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
               ฿{totalNet.toLocaleString()}
@@ -70,18 +70,18 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
 
           {!hideCostAndMargin && (
             <>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-                <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold truncate">
-                  กำไรขั้นต้นรวม <span className="text-[10px] text-slate-400 font-normal">(Gross Profit)</span>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                <div className="text-[11px] text-slate-700 dark:text-slate-300 font-bold truncate">
+                  กำไรขั้นต้นรวม <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">(Gross Profit)</span>
                 </div>
                 <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
                   ฿{grossProfit.toLocaleString()}
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold truncate">
-                  อัตรากำไรเฉลี่ย <span className="text-[10px] text-slate-400 font-normal">(Avg Margin)</span>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                <div className="text-[11px] text-slate-700 dark:text-slate-300 font-bold truncate">
+                  อัตรากำไรเฉลี่ย <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">(Avg Margin)</span>
                 </div>
                 <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
                   {marginPct}%

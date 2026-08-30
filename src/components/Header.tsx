@@ -79,15 +79,9 @@ export const Header: React.FC<HeaderProps> = ({
           subtitle: 'มูลค่าสินค้าคงคลัง อัตราหมุนเวียน (Turnover) และจุดสั่งซื้อซ้ำ',
           icon: <Boxes className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
-      case 'field-mapping':
-        return {
-          title: 'Custom Field Mapping Hub',
-          subtitle: 'โครงสร้างความสัมพันธ์ตาราง Fact Invoices, Dim Customers และ Dim Products',
-          icon: <GitMerge className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-        };
       case 'report-studio':
         return {
-          title: 'Ad-Hoc Report Studio',
+          title: 'Ad-Hoc Report Studio (สตูดิโอสร้างรายงาน)',
           subtitle: 'เครื่องมือสร้างรายงานอิสระแบบ Drag-and-Drop Pivot Matrix',
           icon: <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
@@ -97,23 +91,32 @@ export const Header: React.FC<HeaderProps> = ({
           subtitle: 'คลังรายงานสำเร็จรูป 10 หมวดพร้อมพิมพ์และส่งออกทันที',
           icon: <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
-      case 'data-hub':
-        return {
-          title: 'Import Sage Excel / CSV',
-          subtitle: 'นำเข้าไฟล์ Sage 50 Excel / CSV ตรวจสอบคุณภาพและจับคู่คอลัมน์อัตโนมัติ',
-          icon: <FileUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-        };
-      case 'odbc-sync':
-        return {
-          title: 'ODBC Direct Sync (Sage 50 Gateway)',
-          subtitle: 'ตรวจสอบสถานะการเชื่อมต่อฐานข้อมูล Sage 50 และ Pervasive PSQL',
-          icon: <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-        };
       case 'settings':
+      case 'data-hub':
+      case 'odbc-sync':
+      case 'field-mapping':
         return {
-          title: 'ตั้งค่าโมดูล & สิทธิ์ (Administration & Themes)',
-          subtitle: 'ปรับแต่งแบรนด์ลูกค้า, สลับธีมสีองค์กร, ควบคุมโมดูล และจำลองสิทธิ์ RBAC',
-          icon: <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+          title: 'System Administration & Data Center (ศูนย์จัดการระบบ)',
+          subtitle: 'Data Hub นำเข้าไฟล์, Connectors & Sync Agent, กฎ Schema Mapping, สิทธิ์ผู้ใช้ (RBAC) และธีมระบบ',
+          icon: <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
+        };
+      case 'sales-commission':
+        return {
+          title: 'Sales Target, Quotas & Commission Tracker',
+          subtitle: 'ติดตามผลงานพนักงานขาย บรรลุเป้ารายบุคคล และคำนวณคอมมิชชั่นขั้นบันได',
+          icon: <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
+      case 'executive-alerts':
+        return {
+          title: 'Smart Risk Alerts & Executive Digest Studio',
+          subtitle: 'ตรวจจับความเสี่ยงทางการเงิน 5 ด้าน และสตูดิโอสร้างบทสรุปผู้บริหาร',
+          icon: <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+        };
+      case 'cash-flow':
+        return {
+          title: 'Cash Flow Projection & What-If Simulator',
+          subtitle: 'แบบจำลองสภาพคล่องเงินสดรับล่วงหน้า 12 สัปดาห์ และการจำลองสถานการณ์ความเสี่ยง',
+          icon: <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
         };
       default:
         return {
@@ -231,11 +234,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Upload Excel Button */}
         <button
           onClick={onOpenUpload}
-          title="Import Sage File"
+          title="นำเข้าไฟล์ Excel / CSV"
           className="flex items-center space-x-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer shrink-0"
         >
-          <FileUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-          <span className="hidden md:inline">Import Sage</span>
+          <FileUp className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+          <span className="hidden md:inline">Import Excel</span>
           <span className="hidden sm:inline md:hidden">Import</span>
         </button>
 

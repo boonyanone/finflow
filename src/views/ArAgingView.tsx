@@ -1,46 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Search,
-  AlertTriangle,
   Clock,
-  ShieldCheck,
-  Building2,
-  Send,
-  Calendar,
   DollarSign,
-  TrendingDown,
+  Calendar,
+  AlertTriangle,
   AlertOctagon,
-  ChevronDown,
-  ChevronRight,
-  FileSpreadsheet,
-  Filter,
-  User,
-  Phone,
-  Mail,
-  ArrowUpDown,
-  ExternalLink,
-  Layers,
   Sparkles,
-  Info,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Users,
-  Activity,
+  Search,
+  ExternalLink,
+  ShieldCheck,
+  Filter,
+  X,
+  TrendingDown,
+  Calculator,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  CartesianGrid,
-  Cell,
-  PieChart,
-  Pie,
-} from 'recharts';
 import { ArAgingBucket, Customer, InvoiceRecord } from '../types';
+
+// Sub-components
+import { ArAgingBands, ArFilterType } from '../components/ar/ArAgingBands';
+import { ArEclProvisionChart } from '../components/ar/ArEclProvisionChart';
+import { TopDebtorsConcentration } from '../components/ar/TopDebtorsConcentration';
+import { ArAgingCustomerTable } from '../components/ar/ArAgingCustomerTable';
 
 interface ArAgingViewProps {
   arBuckets: ArAgingBucket[];
@@ -58,20 +40,33 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
   invoices,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRiskFilter, setSelectedRiskFilter] = useState<'all' | 'current' | 'overdue' | 'high_risk' | 'overlimit'>('all');
+  const [selectedRiskFilter, setSelectedRiskFilter] = useState<ArFilterType>('all');
   const [sortBy, setSortBy] = useState<'outstanding_desc' | 'overdue_desc' | 'credit_util_desc' | 'name_asc'>('outstanding_desc');
   const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
+  const [showDsoSimulator, setShowDsoSimulator] = useState(false);
+  const [targetDso, setTargetDso] = useState(25);
+
+  // Helper to handle filter selection and auto-scroll smoothly to the table
+  const handleSelectFilterWithScroll = (filter: ArFilterType) => {
+    setSelectedRiskFilter(filter);
+    if (filter !== 'all') {
+      setTimeout(() => {
+        const tableElem = document.getElementById('agingCustomerTableSection');
+        if (tableElem) {
+          tableElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  };
 
   // 1. Calculate Real-time Customer AR Buckets dynamically from invoices & customer master data
   const customerAgingData = useMemo(() => {
-    // Map customer master for lookup
     const customerMap = new Map<string, Customer>();
     customers.forEach((c) => {
       customerMap.set(c.id, c);
       customerMap.set(c.name, c);
     });
 
-    // Group invoices by customer
     const grouped = new Map<string, {
       customerId: string;
       customerName: string;
@@ -92,7 +87,6 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
       invoices: InvoiceRecord[];
     }>();
 
-    // Initialize with all customers that have invoices or buckets
     invoices.forEach((inv) => {
       const custKey = inv.customerId || inv.customerName;
       if (!grouped.has(custKey)) {
@@ -128,7 +122,6 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
           entry.maxOverdueDays = inv.overdueDays;
         }
 
-        // Categorize by Sage 50 aging standard
         if (inv.overdueDays <= 30) {
           entry.current0_30 += inv.outstandingAmount;
         } else if (inv.overdueDays <= 60) {
@@ -141,7 +134,6 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
       }
     });
 
-    // Merge any existing arBuckets that might not be in invoices
     arBuckets.forEach((b) => {
       const key = b.customerId || b.customerName;
       if (!grouped.has(key)) {
@@ -181,25 +173,24 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
   const totalOverdue = total31_60 + total61_90 + totalOver90;
   const overdueRatio = grandTotalAR > 0 ? ((totalOverdue / grandTotalAR) * 100).toFixed(1) : '0.0';
 
-  // Days Sales Outstanding (DSO) = (Total AR / Total Credit Sales) * 90 days (for quarterly cycle)
   const totalCreditSales = invoices.reduce((acc, r) => acc + r.netAmount, 0) || 5473200;
   const dsoDays = totalCreditSales > 0 ? Math.round((grandTotalAR / totalCreditSales) * 180) : 32;
 
-  // Expected Credit Loss (ECL / ค่าเผื่อหนี้สงสัยจะสูญตามเกณฑ์ TFRS 9)
-  // Provision rates: 0-30d: 1%, 31-60d: 5%, 61-90d: 25%, >90d: 60%
   const estimatedProvisionECL = Math.round(
     total0_30 * 0.01 + total31_60 * 0.05 + total61_90 * 0.25 + totalOver90 * 0.60
   );
 
-  // Number of accounts with credit overlimit (>90% utilization or over limit)
   const overlimitAccountsCount = customerAgingData.filter(
     (c) => c.totalOutstanding >= c.creditLimit * 0.85
   ).length;
 
+  // Working Capital Impact Calculation for Simulator
+  const dailySales = totalCreditSales / 180;
+  const cashReleased = Math.max(0, Math.round((dsoDays - targetDso) * dailySales));
+
   // 3. Filter & Sort
   const filteredAndSorted = useMemo(() => {
     let list = customerAgingData.filter((c) => {
-      // Search
       const matchSearch =
         !searchTerm ||
         c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -208,7 +199,10 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
 
       if (!matchSearch) return false;
 
-      // Risk filters
+      if (selectedRiskFilter === '0_30') return c.current0_30 > 0;
+      if (selectedRiskFilter === '31_60') return c.aging31_60 > 0;
+      if (selectedRiskFilter === '61_90') return c.aging61_90 > 0;
+      if (selectedRiskFilter === 'over90') return c.over90 > 0;
       if (selectedRiskFilter === 'current') return c.current0_30 > 0 && c.aging31_60 === 0 && c.aging61_90 === 0 && c.over90 === 0;
       if (selectedRiskFilter === 'overdue') return c.aging31_60 > 0 || c.aging61_90 > 0 || c.over90 > 0;
       if (selectedRiskFilter === 'high_risk') return c.aging61_90 > 0 || c.over90 > 0 || c.status === 'Credit Hold';
@@ -217,7 +211,6 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
       return true;
     });
 
-    // Sort
     list.sort((a, b) => {
       if (sortBy === 'outstanding_desc') return b.totalOutstanding - a.totalOutstanding;
       if (sortBy === 'overdue_desc') return (b.aging31_60 + b.aging61_90 + b.over90) - (a.aging31_60 + a.aging61_90 + a.over90);
@@ -233,6 +226,7 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
   const agingChartData = useMemo(() => {
     return [
       {
+        bucketKey: '0_30' as ArFilterType,
         name: '0-30 วัน (Current)',
         shortName: '0-30 วัน',
         amount: total0_30,
@@ -241,6 +235,7 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
         fill: '#10b981',
       },
       {
+        bucketKey: '31_60' as ArFilterType,
         name: '31-60 วัน (Overdue)',
         shortName: '31-60 วัน',
         amount: total31_60,
@@ -249,6 +244,7 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
         fill: '#3b82f6',
       },
       {
+        bucketKey: '61_90' as ArFilterType,
         name: '61-90 วัน (High Risk)',
         shortName: '61-90 วัน',
         amount: total61_90,
@@ -257,6 +253,7 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
         fill: '#f59e0b',
       },
       {
+        bucketKey: 'over90' as ArFilterType,
         name: '> 90 วัน (Bad Debt)',
         shortName: '> 90 วัน',
         amount: totalOver90,
@@ -285,489 +282,343 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
           totalOutstanding: c.totalOutstanding,
           creditLimit: c.creditLimit,
           utilizationPct: c.creditLimit > 0 ? Math.round((c.totalOutstanding / c.creditLimit) * 100) : 0,
+          invoices: c.invoices,
         };
       });
   }, [customerAgingData]);
-
-  // Chart 3: Debt Portfolio Quality Donut
-  const debtQualityPieData = useMemo(() => {
-    return [
-      { name: 'อยู่ในกำหนด (Current)', value: total0_30, color: '#10b981' },
-      { name: 'เกิน 31-60 วัน', value: total31_60, color: '#3b82f6' },
-      { name: 'เกิน 61-90 วัน', value: total61_90, color: '#f59e0b' },
-      { name: 'เกิน >90 วัน', value: totalOver90, color: '#ef4444' },
-    ].filter((item) => item.value > 0);
-  }, [total0_30, total31_60, total61_90, totalOver90]);
 
   const toggleExpand = (id: string) => {
     setExpandedCustomerId((prev) => (prev === id ? null : id));
   };
 
+  // CSV Export
+  const handleExportCsv = () => {
+    const headers = [
+      'Customer ID',
+      'Customer Name',
+      'Group',
+      'Sales Rep',
+      'Credit Limit',
+      '0-30 Days',
+      '31-60 Days',
+      '61-90 Days',
+      '>90 Days',
+      'Total Outstanding',
+      'Max Overdue Days',
+      'Status',
+    ];
+
+    const rows = filteredAndSorted.map((c) => [
+      `"${c.customerId}"`,
+      `"${c.customerName}"`,
+      `"${c.group}"`,
+      `"${c.salesRep}"`,
+      c.creditLimit,
+      c.current0_30,
+      c.aging31_60,
+      c.aging61_90,
+      c.over90,
+      c.totalOutstanding,
+      c.maxOverdueDays,
+      `"${c.status}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `AR_Aging_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div id="viewAging" className="view-panel space-y-5 w-full min-w-0">
-      {/* 1. Header with Breadcrumb, Live Indicator & Export / AI Action */}
+    <div id="viewAging" className="view-panel space-y-5 sm:space-y-6 w-full min-w-0 pb-12">
+      {/* 1. Header with Breadcrumb & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs">
-        <div className="flex items-center space-x-3.5 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0 shadow-2xs">
-            <Clock className="w-5 h-5" />
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-slate-400 font-medium">Finance /</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">A/R Aging &amp; Collections</span>
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60">
+              AUDIT READY
+            </span>
           </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
-                A/R Aging &amp; Credit Risk Intelligence (วิเคราะห์อายุลูกหนี้และการควบคุมสินเชื่อ)
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Sage 50 Direct Linked
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              ตรวจจับลูกหนี้เกินกำหนด ควบคุมเพดานวงเงินเครดิต (Credit Limit) และประเมินความเสี่ยงหนี้สูญเชิงรุก
-            </p>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-1">
+            วิเคราะห์อายุลูกหนี้ &amp; บริหารความเสี่ยงสินเชื่อ (A/R Aging)
+          </h1>
         </div>
 
-        <div className="flex items-center space-x-2 shrink-0 self-start sm:self-center">
+        <div className="flex items-center space-x-2 shrink-0">
           <button
-            onClick={() => onOpenDebtDraft('บจก. เบทาฟู้ดส์ โพลทรี่ โพรเซสซิ่ง', 'INV-2026-CR13', 368800, 63)}
-            className="flex items-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs shadow-blue-500/20"
+            type="button"
+            onClick={() => setShowDsoSimulator(!showDsoSimulator)}
+            className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer border border-slate-200/80 dark:border-slate-700"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-100" />
+            <Calculator className="w-3.5 h-3.5 text-indigo-600" />
+            <span>จำลองเป้า DSO &amp; เงินสด</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenDebtDraft('บจก. เบทาฟู้ดส์ โพลทรี่ โพรเซสซิ่ง', 'INV-2026-CR13', 368800, 63)}
+            className="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
             <span>AI ร่างหนังสือทวงหนี้</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Top Accounting & Credit Executive KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* KPI 1: Total AR Outstanding */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+      {/* DSO & Working Capital Simulator Drawer/Card (if open) */}
+      {showDsoSimulator && (
+        <div className="bg-gradient-to-br from-indigo-50/95 via-slate-50 to-blue-50/90 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 text-slate-900 dark:text-white p-5 sm:p-6 rounded-2xl border border-indigo-200/90 dark:border-indigo-800/80 shadow-md space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-              ลูกหนี้การค้ารวม (Total AR)
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                <Calculator className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                  เครื่องมือจำลองเป้าหมาย DSO &amp; ผลกระทบกระแสเงินสดหมุนเวียน
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+                  ประเมินมูลค่าเงินสดที่จะถูกปลดล็อกเข้าบริษัททันที หากเร่งรัดเก็บเงินได้ตามเป้าหมาย
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowDsoSimulator(false)}
+              className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            {/* Current DSO */}
+            <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-4 shadow-2xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 block">
+                DSO ปัจจุบัน (Current DSO)
+              </span>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 dark:text-white mt-1.5">
+                {dsoDays} <span className="text-sm font-bold text-slate-500 dark:text-slate-400">วัน</span>
+              </div>
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1.5 block">
+                ยอดหนี้คงค้างรวม: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">฿{grandTotalAR.toLocaleString()}</strong>
+              </span>
+            </div>
+
+            {/* Target DSO Slider */}
+            <div className="bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-900/60 rounded-xl p-4 shadow-2xs space-y-2.5">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
+                  ปรับเป้าหมาย DSO ใหม่:
+                </span>
+                <span className="font-black font-mono text-indigo-600 dark:text-indigo-400 text-lg px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800">
+                  {targetDso} วัน
+                </span>
+              </div>
+              <input
+                type="range"
+                min={15}
+                max={45}
+                value={targetDso}
+                onChange={(e) => setTargetDso(Number(e.target.value))}
+                className="w-full accent-indigo-600 dark:accent-indigo-400 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+              />
+              <div className="flex justify-between text-[11px] font-bold">
+                <span className="text-emerald-700 dark:text-emerald-400">15 วัน (เร่งด่วน)</span>
+                <span className="text-indigo-600 dark:text-indigo-300">30 วัน (มาตรฐาน)</span>
+                <span className="text-amber-700 dark:text-amber-400">45 วัน (เพดาน)</span>
+              </div>
+            </div>
+
+            {/* Cash Released Result */}
+            <div className="bg-emerald-50/95 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700/80 rounded-xl p-4 shadow-2xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-300 block">
+                เงินสดหมุนเวียนที่ปลดล็อกได้ (Cash Released)
+              </span>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-700 dark:text-emerald-400 mt-1.5">
+                +฿{cashReleased.toLocaleString()}
+              </div>
+              <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-300 mt-1.5 block">
+                {targetDso < dsoDays
+                  ? `✓ เร่งเก็บหนี้เร็วขึ้น ${dsoDays - targetDso} วัน เพิ่มสภาพคล่องเงินสด`
+                  : '⚠ ตั้งเป้าหมาย DSO ให้ต่ำกว่าปัจจุบันเพื่อดูยอดเงินสดที่ปลดล็อก'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Top Accounting & Credit Executive KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        {/* KPI 1: Total AR Outstanding */}
+        <div
+          onClick={() => onDrillDown(
+            'ยอดลูกหนี้คงค้างทั้งหมด (Total AR Portfolio)',
+            `รายการใบแจ้งหนี้ที่มีหนี้คงเหลือทั้งหมด (${invoices.filter((i) => i.outstandingAmount > 0).length} รายการ)`,
+            invoices.filter((i) => i.outstandingAmount > 0)
+          )}
+          className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 rounded-2xl p-5 shadow-xs flex flex-col justify-between cursor-pointer transition group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              TOTAL AR (ลูกหนี้คงเหลือ)
             </span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <DollarSign className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition">
+              <Layers className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+            <div className="text-2xl sm:text-[28px] font-black text-slate-900 dark:text-white tracking-tight font-mono">
               ฿{grandTotalAR.toLocaleString()}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between">
-              <span>จำนวน {customerAgingData.filter((c) => c.totalOutstanding > 0).length} ลูกหนี้ค้างชำระ</span>
-              <span className="font-semibold text-blue-600 dark:text-blue-400">100% AR</span>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+              <span>{customerAgingData.filter((c) => c.totalOutstanding > 0).length} ลูกหนี้ที่มียอดค้าง</span>
+              <span className="font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-0.5">
+                เจาะลึกบิล <ExternalLink className="w-3 h-3" />
+              </span>
             </div>
           </div>
         </div>
 
         {/* KPI 2: Days Sales Outstanding (DSO) */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div
+          onClick={() => setShowDsoSimulator(true)}
+          className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 hover:border-blue-400 rounded-2xl p-5 shadow-xs flex flex-col justify-between cursor-pointer transition group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-              ระยะเวลาเก็บหนี้เฉลี่ย (DSO)
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              DSO (ระยะเวลาเก็บหนี้เฉลี่ย)
             </span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-2xl sm:text-[28px] font-black text-slate-900 dark:text-white tracking-tight font-mono">
                 {dsoDays}
               </span>
-              <span className="text-xs font-bold text-slate-500">วัน (Days)</span>
-              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60">
-                เป้าหมาย &lt;45 วัน
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">วัน</span>
+              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                เป้า &lt;45 วัน
               </span>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              เร็วกว่าเกณฑ์เฉลี่ยอุตสาหกรรม 13 วัน
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+              <span>เร็วกว่าเกณฑ์ 13 วัน</span>
+              <span className="font-bold text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-0.5">
+                จำลองเงินสด <Calculator className="w-3 h-3" />
+              </span>
             </div>
           </div>
         </div>
 
-        {/* KPI 3: Overdue Amount & Risk Exposure */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        {/* KPI 3: Overdue Amount */}
+        <div
+          onClick={() => {
+            const overdueInvoices = invoices.filter((i) => i.outstandingAmount > 0 && i.overdueDays > 30);
+            onDrillDown(
+              'ยอดหนี้เกินกำหนดทั้งหมด (Total Overdue AR > 30 Days)',
+              `รายการใบแจ้งหนี้ที่เกินกำหนดรอบแรกขึ้นไป (${overdueInvoices.length} รายการ | รวม ฿${totalOverdue.toLocaleString()})`,
+              overdueInvoices
+            );
+          }}
+          className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 hover:border-amber-400 rounded-2xl p-5 shadow-xs flex flex-col justify-between cursor-pointer transition group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-              หนี้เกินกำหนด (Overdue AR)
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              OVERDUE AR (หนี้เกินกำหนด)
             </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono">
+            <div className="text-2xl sm:text-[28px] font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono">
               ฿{totalOverdue.toLocaleString()}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between">
-              <span>สัดส่วนหนี้เกินกำหนด</span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">{overdueRatio}% ของยอดหนี้</span>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+              <span>สัดส่วนหนี้เกินกำหนด {overdueRatio}%</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400 group-hover:underline flex items-center gap-0.5">
+                เจาะลึกบิล <ExternalLink className="w-3 h-3" />
+              </span>
             </div>
           </div>
         </div>
 
-        {/* KPI 4: ECL Provision / Bad Debt Risk */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        {/* KPI 4: ECL Provision */}
+        <div
+          onClick={() => {
+            const highRiskInvoices = invoices.filter((i) => i.outstandingAmount > 0 && i.overdueDays > 60);
+            onDrillDown(
+              'หนี้ที่ต้องตั้งสำรองสูงตาม TFRS 9 (Stage 2 & Stage 3)',
+              `รายการใบแจ้งหนี้ค้างเกิน 60 วัน (${highRiskInvoices.length} รายการ | ประมาณการสำรอง ฿${estimatedProvisionECL.toLocaleString()})`,
+              highRiskInvoices
+            );
+          }}
+          className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 hover:border-rose-400 rounded-2xl p-5 shadow-xs flex flex-col justify-between cursor-pointer transition group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-              ประมาณการเผื่อหนี้สงสัยจะสูญ (ECL)
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              ECL PROVISION (สำรองหนี้สูญ)
             </span>
-            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition">
               <AlertOctagon className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono">
+            <div className="text-2xl sm:text-[28px] font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono">
               ฿{estimatedProvisionECL.toLocaleString()}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between">
-              <span>เกณฑ์ TFRS 9 Provision</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">
-                {overlimitAccountsCount > 0 ? `${overlimitAccountsCount} รายเฝ้าระวัง` : 'ปกติ'}
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+              <span>เกณฑ์ TFRS 9</span>
+              <span className="font-bold text-rose-600 dark:text-rose-400 group-hover:underline flex items-center gap-0.5">
+                เจาะลึกบิล <ExternalLink className="w-3 h-3" />
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Aging Breakdown Distribution Timeline Cards */}
-      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-              สัดส่วนอายุหนี้รายช่วงเวลา (Standard Aging Buckets)
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              คลิกที่การ์ดช่วงเวลาเพื่อกรองตารางข้อมูลด้านล่างแบบอัตโนมัติ
-            </p>
-          </div>
-          <button
-            onClick={() => onDrillDown('รายงานอายุหนี้ทั้งหมด (All Aging Invoices)', 'รายการบิลค้างชำระทุกลูกค้า', invoices.filter((i) => i.outstandingAmount > 0))}
-            className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <span>ดูบิลค้างชำระทั้งหมด</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      {/* 3. Aging Breakdown Distribution Timeline Cards (Level 2) */}
+      <ArAgingBands
+        total0_30={total0_30}
+        total31_60={total31_60}
+        total61_90={total61_90}
+        totalOver90={totalOver90}
+        grandTotalAR={grandTotalAR}
+        selectedRiskFilter={selectedRiskFilter}
+        onSelectFilter={handleSelectFilterWithScroll}
+        onDrillDown={onDrillDown}
+        invoices={invoices}
+      />
 
-        {/* Visual Progress Bar Ratio */}
-        <div className="h-3 rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-800">
-          <div
-            style={{ width: `${grandTotalAR > 0 ? (total0_30 / grandTotalAR) * 100 : 50}%` }}
-            className="bg-emerald-500 transition-all duration-500"
-            title={`0-30 วัน: ฿${total0_30.toLocaleString()}`}
-          />
-          <div
-            style={{ width: `${grandTotalAR > 0 ? (total31_60 / grandTotalAR) * 100 : 25}%` }}
-            className="bg-blue-500 transition-all duration-500"
-            title={`31-60 วัน: ฿${total31_60.toLocaleString()}`}
-          />
-          <div
-            style={{ width: `${grandTotalAR > 0 ? (total61_90 / grandTotalAR) * 100 : 25}%` }}
-            className="bg-amber-500 transition-all duration-500"
-            title={`61-90 วัน: ฿${total61_90.toLocaleString()}`}
-          />
-          <div
-            style={{ width: `${grandTotalAR > 0 ? (totalOver90 / grandTotalAR) * 100 : 0}%` }}
-            className="bg-rose-500 transition-all duration-500"
-            title={`>90 วัน: ฿${totalOver90.toLocaleString()}`}
-          />
-        </div>
-
-        {/* 4 Interactive Aging Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Card 1: 0 - 30 Days */}
-          <div
-            onClick={() => setSelectedRiskFilter(selectedRiskFilter === 'current' ? 'all' : 'current')}
-            className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-              selectedRiskFilter === 'current'
-                ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-400 ring-2 ring-emerald-500/20'
-                : 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/70 dark:border-emerald-900/40 hover:bg-emerald-50/70'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center space-x-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>0 - 30 วัน (อยู่ในกำหนด)</span>
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                  {grandTotalAR > 0 ? ((total0_30 / grandTotalAR) * 100).toFixed(0) : 0}%
-                </span>
-              </div>
-              <div className="text-xl font-black text-emerald-900 dark:text-emerald-100 font-mono mt-1">
-                ฿{total0_30.toLocaleString()}
-              </div>
-            </div>
-            <div className="mt-3 pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
-              ✓ ความเสี่ยงต่ำตามเงื่อนไขเครดิตเทอม
-            </div>
-          </div>
-
-          {/* Card 2: 31 - 60 Days */}
-          <div
-            onClick={() => setSelectedRiskFilter(selectedRiskFilter === 'overdue' ? 'all' : 'overdue')}
-            className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-              selectedRiskFilter === 'overdue'
-                ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 ring-2 ring-blue-500/20'
-                : 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-200/70 dark:border-blue-900/40 hover:bg-blue-50/70'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-blue-800 dark:text-blue-300 flex items-center space-x-1.5">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                  <span>31 - 60 วัน (เริ่มเกินกำหนด)</span>
-                </span>
-                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400">
-                  {grandTotalAR > 0 ? ((total31_60 / grandTotalAR) * 100).toFixed(0) : 0}%
-                </span>
-              </div>
-              <div className="text-xl font-black text-blue-900 dark:text-blue-100 font-mono mt-1">
-                ฿{total31_60.toLocaleString()}
-              </div>
-            </div>
-            <div className="mt-3 pt-2 border-t border-blue-200/60 dark:border-blue-900/40 text-[11px] text-blue-700 dark:text-blue-300 font-medium">
-              ℹ ส่งข้อความเตือนความจำรอบแรก
-            </div>
-          </div>
-
-          {/* Card 3: 61 - 90 Days */}
-          <div
-            onClick={() => setSelectedRiskFilter(selectedRiskFilter === 'high_risk' ? 'all' : 'high_risk')}
-            className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-              selectedRiskFilter === 'high_risk'
-                ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-400 ring-2 ring-amber-500/20'
-                : 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-900/40 hover:bg-amber-50/70'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center space-x-1.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span>61 - 90 วัน (เฝ้าระวังเข้มงวด)</span>
-                </span>
-                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                  {grandTotalAR > 0 ? ((total61_90 / grandTotalAR) * 100).toFixed(0) : 0}%
-                </span>
-              </div>
-              <div className="text-xl font-black text-amber-900 dark:text-amber-100 font-mono mt-1">
-                ฿{total61_90.toLocaleString()}
-              </div>
-            </div>
-            <div className="mt-3 pt-2 border-t border-amber-200/60 dark:border-amber-900/40 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
-              ⚠ ระงับเปิดใบสั่งซื้อโครงการใหม่
-            </div>
-          </div>
-
-          {/* Card 4: > 90 Days */}
-          <div
-            onClick={() => setSelectedRiskFilter(selectedRiskFilter === 'high_risk' ? 'all' : 'high_risk')}
-            className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-              totalOver90 > 0
-                ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/70 dark:border-rose-900/40 hover:bg-rose-50/70'
-                : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-80'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-rose-800 dark:text-rose-300 flex items-center space-x-1.5">
-                  <AlertOctagon className="w-4 h-4 text-rose-600" />
-                  <span>&gt; 90 วัน (เสี่ยงสูญ / Bad Debt)</span>
-                </span>
-                <span className="text-[10px] font-bold text-rose-700 dark:text-rose-400">
-                  {grandTotalAR > 0 ? ((totalOver90 / grandTotalAR) * 100).toFixed(0) : 0}%
-                </span>
-              </div>
-              <div className="text-xl font-black text-rose-900 dark:text-rose-100 font-mono mt-1">
-                ฿{totalOver90.toLocaleString()}
-              </div>
-            </div>
-            <div className="mt-3 pt-2 border-t border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-700 dark:text-rose-300 font-medium">
-              {totalOver90 > 0 ? '⛔ มอบหมายฝ่ายกฎหมายดำเนินการ' : '✓ ไม่มีหนี้ค้างเกิน 90 วัน'}
-            </div>
-          </div>
-        </div>
+      {/* 4. Visual Credit & Aging Intelligence (Charts - Level 3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 w-full min-w-0">
+        <ArEclProvisionChart
+          agingChartData={agingChartData}
+          grandTotalAR={grandTotalAR}
+          total0_30={total0_30}
+          total31_60={total31_60}
+          total61_90={total61_90}
+          totalOver90={totalOver90}
+          onSelectFilter={handleSelectFilterWithScroll}
+          onDrillDown={onDrillDown}
+          invoices={invoices}
+        />
+        <TopDebtorsConcentration
+          topDebtorsChartData={topDebtorsChartData}
+          overlimitAccountsCount={overlimitAccountsCount}
+          onDrillDown={onDrillDown}
+        />
       </div>
 
-      {/* 4. Visual Credit & Aging Intelligence (Charts for Instant Executive Decision) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Chart 1: Aging Buckets & ECL Provision Breakdown */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>การกระจายตัวของอายุหนี้และการตั้งสำรอง (Aging &amp; ECL Provision)</span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                เปรียบเทียบยอดหนี้ค้างชำระกับค่าเผื่อหนี้สงสัยจะสูญตามเกณฑ์ TFRS 9 (1%, 5%, 25%, 60%)
-              </p>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 shrink-0 self-start sm:self-auto">
-              Total ฿{grandTotalAR.toLocaleString()}
-            </span>
-          </div>
-
-          <div className="h-64 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={agingChartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#33415520" />
-                <XAxis
-                  dataKey="shortName"
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                  axisLine={{ stroke: '#cbd5e1' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(val) => `฿${(val / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  formatter={(value: any, name: any) => [
-                    `฿${Number(value).toLocaleString()}`,
-                    name === 'amount' ? 'ยอดลูกหนี้รวม' : 'สำรองหนี้สูญ (ECL)',
-                  ]}
-                  labelFormatter={(label) => `ช่วงอายุหนี้: ${label}`}
-                  contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    borderColor: '#334155',
-                    borderRadius: '12px',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
-                  formatter={(value) => (value === 'amount' ? 'ยอดลูกหนี้คงเหลือ' : 'สำรองเผื่อหนี้สูญ (ECL)')}
-                />
-                <Bar dataKey="amount" fill="#3b82f6" radius={[6, 6, 0, 0]} name="amount">
-                  {agingChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-                <Bar dataKey="provision" fill="#ef4444" radius={[6, 6, 0, 0]} name="provision" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-center">
-            <div>
-              <span className="text-slate-400 block text-[10px]">0-30 วัน</span>
-              <strong className="text-emerald-600 font-mono">฿{total0_30.toLocaleString()}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">31-60 วัน</span>
-              <strong className="text-blue-600 font-mono">฿{total31_60.toLocaleString()}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">61-90 วัน</span>
-              <strong className="text-amber-600 font-mono">฿{total61_90.toLocaleString()}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">&gt;90 วัน</span>
-              <strong className="text-rose-600 font-mono">฿{totalOver90.toLocaleString()}</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Chart 2: Top 5 Highest Outstanding Debtors vs Credit Limit */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>5 อันดับลูกหนี้ค้างชำระสูงสุด (Top Debtors Concentration)</span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                แยกสัดส่วนหนี้ในกำหนด (Current) กับหนี้เกินกำหนด (Overdue) เทียบวงเงินสินเชื่อ
-              </p>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/60 shrink-0 self-start sm:self-auto">
-              Top 5 = ฿{topDebtorsChartData.reduce((acc, c) => acc + c.totalOutstanding, 0).toLocaleString()}
-            </span>
-          </div>
-
-          <div className="h-64 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                layout="vertical"
-                data={topDebtorsChartData}
-                margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#33415520" />
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(val) => `฿${(val / 1000).toFixed(0)}k`}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  axisLine={{ stroke: '#cbd5e1' }}
-                  tickLine={false}
-                  width={110}
-                />
-                <Tooltip
-                  formatter={(value: any, name: any) => [
-                    `฿${Number(value).toLocaleString()}`,
-                    name === 'current' ? 'อยู่ในกำหนด (Current)' : 'เกินกำหนด (Overdue)',
-                  ]}
-                  labelFormatter={(_label, payload: any) => {
-                    const row = payload?.[0]?.payload;
-                    return row ? `${row.fullName} (วงเงิน: ฿${row.creditLimit.toLocaleString()} | ใช้ไป ${row.utilizationPct}%)` : '';
-                  }}
-                  contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    borderColor: '#334155',
-                    borderRadius: '12px',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
-                  formatter={(value) => (value === 'current' ? 'อยู่ในกำหนด' : 'เกินกำหนด')}
-                />
-                <Bar dataKey="current" stackId="debt" fill="#10b981" radius={[0, 0, 0, 0]} name="current" />
-                <Bar dataKey="overdue" stackId="debt" fill="#f59e0b" radius={[0, 6, 6, 0]} name="overdue" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>เขียว = หนี้ในกำหนด</span>
-              <span className="w-2 h-2 rounded-full bg-amber-500 ml-2"></span>
-              <span>ส้ม = หนี้เกินกำหนด</span>
-            </span>
-            <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {overlimitAccountsCount > 0 ? `⚠ มี ${overlimitAccountsCount} รายใช้วงเงินเกิน 85%` : '✓ วงเงินอยู่ในระดับปลอดภัย'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. Customer Credit Risk & Aging Analysis Table */}
-      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-        {/* Table Controls: Search, Risk Pill Filter, Sorting */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      {/* 5. Customer Credit Risk & Aging Analysis Table (Level 4) */}
+      <div id="agingCustomerTableSection" className="bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4 scroll-mt-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-4">
           {/* Search Box */}
           <div className="relative w-full lg:w-72">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
@@ -776,41 +627,54 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="ค้นหาชื่อลูกค้า, รหัส, พนักงานขาย..."
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/70 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition shadow-2xs"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/70 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
             />
           </div>
 
-          {/* Risk Level Pills */}
+          {/* Risk Level & Bucket Filter Pills */}
           <div className="flex items-center flex-wrap gap-1.5">
-            <span className="text-[11px] text-slate-400 font-medium mr-1 hidden sm:inline">กรองสถานะ:</span>
             {[
               { id: 'all', label: 'ทุกลูกหนี้' },
-              { id: 'current', label: 'อยู่ในกำหนด (0-30d)' },
-              { id: 'overdue', label: 'เกินกำหนด (>30d)' },
-              { id: 'high_risk', label: 'เสี่ยงสูง (>60d / Hold)' },
+              { id: '0_30', label: '0-30 วัน (ในกำหนด)' },
+              { id: '31_60', label: '31-60 วัน (เริ่มเตือน)' },
+              { id: '61_90', label: '61-90 วัน (เฝ้าระวัง)' },
+              { id: 'over90', label: '>90 วัน (วิกฤต)' },
+              { id: 'overdue', label: 'เกินกำหนดทั้งหมด (>30d)' },
+              { id: 'high_risk', label: 'เสี่ยงสูง / Hold' },
               { id: 'overlimit', label: 'วงเงินตึงตัว (>85%)' },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setSelectedRiskFilter(tab.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                onClick={() => handleSelectFilterWithScroll(tab.id as ArFilterType)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                   selectedRiskFilter === tab.id
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70'
                 }`}
               >
                 {tab.label}
               </button>
             ))}
+
+            {selectedRiskFilter !== 'all' && (
+              <button
+                onClick={() => handleSelectFilterWithScroll('all')}
+                className="px-2 py-1 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 transition flex items-center gap-1 cursor-pointer"
+                title="ล้างตัวกรอง"
+              >
+                <X className="w-3 h-3" />
+                <span>ล้างกรอง</span>
+              </button>
+            )}
           </div>
 
           {/* Sort By Dropdown */}
-          <div className="flex items-center space-x-2 shrink-0 self-end lg:self-auto">
-            <span className="text-[11px] text-slate-400 font-medium">เรียงตาม:</span>
+          <div className="flex items-center space-x-2 shrink-0 self-end lg:self-auto text-xs">
+            <span className="text-slate-400 font-medium">เรียงตาม:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer font-medium"
             >
               <option value="outstanding_desc">ยอดหนี้ค้างสูงสุด (Top Outstanding)</option>
               <option value="overdue_desc">ยอดเกินกำหนดสูงสุด (Highest Overdue)</option>
@@ -821,296 +685,14 @@ export const ArAgingView: React.FC<ArAgingViewProps> = ({
         </div>
 
         {/* Master Aging Table */}
-        <div className="overflow-x-auto custom-scrollbar border border-slate-100 dark:border-slate-800/80 rounded-xl">
-          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[950px]">
-            <thead className="bg-slate-50/80 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="py-3 px-3 w-8 text-center"></th>
-                <th className="py-3 px-3">ลูกค้า / รหัสโครงการ</th>
-                <th className="py-3 px-3">พนักงานขาย</th>
-                <th className="py-3 px-3 text-right">วงเงินเครดิต &amp; การใช้งาน</th>
-                <th className="py-3 px-3 text-right">0 - 30 วัน</th>
-                <th className="py-3 px-3 text-right">31 - 60 วัน</th>
-                <th className="py-3 px-3 text-right">61 - 90 วัน</th>
-                <th className="py-3 px-3 text-right">&gt; 90 วัน</th>
-                <th className="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">ยอดค้างรวม (AR)</th>
-                <th className="py-3 px-3 text-center">ระดับความเสี่ยง</th>
-                <th className="py-3 px-3 text-center">ดำเนินการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-[#0f172a]">
-              {filteredAndSorted.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="py-8 text-center text-slate-400">
-                    ไม่พบข้อมูลลูกหนี้ที่ตรงกับเงื่อนไขการค้นหา
-                  </td>
-                </tr>
-              ) : (
-                filteredAndSorted.map((c) => {
-                  const isExpanded = expandedCustomerId === c.customerId;
-                  const utilPercent = c.creditLimit > 0 ? Math.min(100, Math.round((c.totalOutstanding / c.creditLimit) * 100)) : 0;
-                  const isOverlimit = c.totalOutstanding >= c.creditLimit;
-                  const isHighUtil = utilPercent >= 80;
-
-                  // Determine Risk Badge
-                  let riskBadge = {
-                    text: 'ปกติ (Low Risk)',
-                    color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200/60',
-                  };
-                  if (c.status === 'Credit Hold' || c.aging61_90 > 0 || c.over90 > 0) {
-                    riskBadge = {
-                      text: 'เสี่ยงสูง (High Risk)',
-                      color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200/60',
-                    };
-                  } else if (c.aging31_60 > 0 || isHighUtil) {
-                    riskBadge = {
-                      text: 'เฝ้าระวัง (Watchlist)',
-                      color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200/60',
-                    };
-                  }
-
-                  return (
-                    <React.Fragment key={c.customerId}>
-                      <tr className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition ${isExpanded ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''}`}>
-                        {/* Expand Toggle */}
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => toggleExpand(c.customerId)}
-                            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                            title="ดูรายการบิลย่อย"
-                          >
-                            {isExpanded ? <ChevronDown className="w-4 h-4 text-blue-600" /> : <ChevronRight className="w-4 h-4" />}
-                          </button>
-                        </td>
-
-                        {/* Customer Info */}
-                        <td className="py-3 px-3">
-                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                            <span>{c.customerName}</span>
-                            {c.status === 'Credit Hold' && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-600 text-white">
-                                HOLD
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
-                            <span>ID: {c.customerId}</span>
-                            <span>•</span>
-                            <span className="truncate max-w-[150px]">{c.group}</span>
-                          </div>
-                        </td>
-
-                        {/* Sales Rep */}
-                        <td className="py-3 px-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                          <div className="flex items-center space-x-1.5">
-                            <User className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="truncate max-w-[130px]">{c.salesRep.split(' ')[0]}</span>
-                          </div>
-                        </td>
-
-                        {/* Credit Limit & Utilization */}
-                        <td className="py-3 px-3 text-right">
-                          <div className="font-mono text-slate-700 dark:text-slate-300">
-                            ฿{c.creditLimit.toLocaleString()}
-                          </div>
-                          <div className="flex items-center justify-end gap-1.5 mt-1">
-                            <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                              <div
-                                style={{ width: `${utilPercent}%` }}
-                                className={`h-full rounded-full ${
-                                  isOverlimit ? 'bg-rose-500' : isHighUtil ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`}
-                              />
-                            </div>
-                            <span className={`text-[10px] font-bold font-mono ${
-                              isOverlimit ? 'text-rose-600' : isHighUtil ? 'text-amber-600' : 'text-slate-400'
-                            }`}>
-                              {utilPercent}%
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* 0 - 30 Days */}
-                        <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                          {c.current0_30 > 0 ? (
-                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                              ฿{c.current0_30.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className="text-slate-300 dark:text-slate-600">-</span>
-                          )}
-                        </td>
-
-                        {/* 31 - 60 Days */}
-                        <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                          {c.aging31_60 > 0 ? (
-                            <span className="font-semibold text-blue-600 dark:text-blue-400">
-                              ฿{c.aging31_60.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className="text-slate-300 dark:text-slate-600">-</span>
-                          )}
-                        </td>
-
-                        {/* 61 - 90 Days */}
-                        <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                          {c.aging61_90 > 0 ? (
-                            <span className="font-bold text-amber-600 dark:text-amber-400">
-                              ฿{c.aging61_90.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className="text-slate-300 dark:text-slate-600">-</span>
-                          )}
-                        </td>
-
-                        {/* > 90 Days */}
-                        <td className="py-3 px-3 text-right font-mono whitespace-nowrap">
-                          {c.over90 > 0 ? (
-                            <span className="font-bold text-rose-600 dark:text-rose-400">
-                              ฿{c.over90.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className="text-slate-300 dark:text-slate-600">-</span>
-                          )}
-                        </td>
-
-                        {/* Total Outstanding */}
-                        <td className="py-3 px-3 text-right font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
-                          ฿{c.totalOutstanding.toLocaleString()}
-                        </td>
-
-                        {/* Risk Rating Badge */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${riskBadge.color}`}>
-                            {riskBadge.text}
-                          </span>
-                        </td>
-
-                        {/* Action Buttons */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center space-x-1.5">
-                            <button
-                              onClick={() =>
-                                onOpenDebtDraft(
-                                  c.customerName,
-                                  c.invoices[0]?.invoiceNo || `INV-${c.customerId}`,
-                                  c.totalOutstanding,
-                                  c.maxOverdueDays || 45
-                                )
-                              }
-                              title="ร่างจดหมายทวงหนี้ด้วย AI"
-                              className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white text-[11px] font-bold transition cursor-pointer flex items-center space-x-1"
-                            >
-                              <Send className="w-3 h-3" />
-                              <span>AI ทวงหนี้</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Expanded Sub-table: Invoice Breakdown for this Customer */}
-                      {isExpanded && (
-                        <tr className="bg-slate-50/60 dark:bg-slate-900/40">
-                          <td colSpan={11} className="p-3 sm:p-4">
-                            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-3 sm:p-4 space-y-3">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2.5">
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-bold text-xs text-slate-900 dark:text-white">
-                                    รายการบิลขายและใบแจ้งหนี้ของ {c.customerName}
-                                  </span>
-                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">
-                                    {c.invoices.length} รายการ
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-3 text-xs text-slate-500">
-                                  <span className="flex items-center gap-1">
-                                    <Phone className="w-3 h-3 text-slate-400" />
-                                    <span>{c.phone}</span>
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Mail className="w-3 h-3 text-slate-400" />
-                                    <span>{c.email}</span>
-                                  </span>
-                                </div>
-                              </div>
-
-                              {c.invoices.length === 0 ? (
-                                <div className="text-xs text-slate-400 py-2 text-center">
-                                  ยังไม่มีประวัติบิลย่อยในระบบ
-                                </div>
-                              ) : (
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-left text-xs">
-                                    <thead className="text-slate-400 border-b border-slate-100 dark:border-slate-700 text-[10px] uppercase">
-                                      <tr>
-                                        <th className="pb-2">เลขที่บิล (Invoice No)</th>
-                                        <th className="pb-2">วันที่เปิดบิล</th>
-                                        <th className="pb-2">วันครบกำหนด (Due Date)</th>
-                                        <th className="pb-2">รายการสินค้า / โครงการ</th>
-                                        <th className="pb-2 text-right">ยอดสุทธิ</th>
-                                        <th className="pb-2 text-right">ชำระแล้ว</th>
-                                        <th className="pb-2 text-right">ยอดค้างชำระ</th>
-                                        <th className="pb-2 text-center">สถานะ</th>
-                                        <th className="pb-2 text-center">เกินกำหนด</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
-                                      {c.invoices.map((inv) => (
-                                        <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                                          <td className="py-2 font-bold text-blue-600 dark:text-blue-400">{inv.invoiceNo}</td>
-                                          <td className="py-2 text-slate-500">{inv.date}</td>
-                                          <td className="py-2 text-slate-500">{inv.dueDate}</td>
-                                          <td className="py-2 text-slate-800 dark:text-slate-200 font-sans max-w-[200px] truncate">{inv.itemDescription}</td>
-                                          <td className="py-2 text-right text-slate-800 dark:text-slate-200">฿{inv.netAmount.toLocaleString()}</td>
-                                          <td className="py-2 text-right text-emerald-600">฿{inv.paidAmount.toLocaleString()}</td>
-                                          <td className="py-2 text-right font-bold text-rose-600">฿{inv.outstandingAmount.toLocaleString()}</td>
-                                          <td className="py-2 text-center font-sans">
-                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                              inv.status === 'Paid'
-                                                ? 'bg-emerald-100 text-emerald-800'
-                                                : inv.status === 'Overdue'
-                                                ? 'bg-rose-100 text-rose-800'
-                                                : 'bg-amber-100 text-amber-800'
-                                            }`}>
-                                              {inv.status}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 text-center">
-                                            {inv.overdueDays > 0 ? (
-                                              <span className="text-rose-600 font-bold">+{inv.overdueDays} วัน</span>
-                                            ) : (
-                                              <span className="text-emerald-600">ในกำหนด</span>
-                                            )}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer Summary Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 text-xs text-slate-500 dark:text-slate-400">
-          <div>
-            แสดงผล <strong>{filteredAndSorted.length}</strong> จากทั้งหมด {customerAgingData.length} ลูกหนี้การค้า
-          </div>
-          <div className="flex items-center space-x-4">
-            <span>
-              ยอดค้างชำระรวมของตาราง: <strong className="font-mono font-bold text-slate-900 dark:text-white">฿{filteredAndSorted.reduce((acc, c) => acc + c.totalOutstanding, 0).toLocaleString()}</strong>
-            </span>
-          </div>
-        </div>
+        <ArAgingCustomerTable
+          filteredAndSorted={filteredAndSorted}
+          expandedCustomerId={expandedCustomerId}
+          toggleExpand={toggleExpand}
+          onOpenDebtDraft={onOpenDebtDraft}
+          onDrillDown={onDrillDown}
+          onExportCsv={handleExportCsv}
+        />
       </div>
     </div>
   );

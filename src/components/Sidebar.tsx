@@ -23,6 +23,8 @@ import {
   TrendingUp,
   Target,
   Bell,
+  Sparkles,
+  Settings,
 } from 'lucide-react';
 import { UserRole, FeatureToggles, UserProfile, CompanyWorkspace, ThemeConfig } from '../types';
 
@@ -69,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const profileRef = useRef<HTMLDivElement>(null);
   const companyRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -82,259 +85,180 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const roles: { role: UserRole; title: string; desc: string }[] = [
-    { role: 'executive', title: 'สมชาย มั่นคง (Admin)', desc: 'Chief Executive • สิทธิ์สูงสุด' },
-    { role: 'finance', title: 'Finance Manager', desc: 'เข้าถึง AR, Aging, Profit & Loss และรายงานการเงิน' },
-    { role: 'sales_rep', title: 'Sales Rep (Alex Wong)', desc: 'เห็นเฉพาะลูกค้าตนเอง และซ่อนต้นทุน COGS / Margin' },
-    { role: 'warehouse', title: 'Warehouse Lead', desc: 'เน้นดู Inventory Valuation, Reorder Point, Stock Movement' },
+  const roles: { role: UserRole; name: string; title: string; desc: string; icon: string }[] = [
+    {
+      role: 'executive',
+      name: 'Pi Loh (Executive)',
+      title: 'Executive / Admin',
+      desc: 'เข้าถึงข้อมูลทั้งหมด & สิทธิ์ผู้ดูแลระบบ',
+      icon: '👑',
+    },
+    {
+      role: 'finance',
+      name: 'Kanya (Finance Mgr)',
+      title: 'Finance Manager',
+      desc: 'เข้าถึง AR, Cash Flow & Financial Reports',
+      icon: '📊',
+    },
+    {
+      role: 'sales_rep',
+      name: 'Alex Wong (Sales Rep)',
+      title: 'Sales Rep (ฝ่ายขาย)',
+      desc: 'เห็นเฉพาะลูกค้าตนเอง และซ่อนต้นทุน COGS/Margin',
+      icon: '💼',
+    },
+    {
+      role: 'warehouse',
+      name: 'Wichai (Warehouse Lead)',
+      title: 'Warehouse Lead',
+      desc: 'เน้น Inventory Valuation, Dead Stock & ROP',
+      icon: '📦',
+    },
   ];
 
   const isLightSidebar = themeConfig?.sidebarStyle === 'light-clean';
 
-  // Dynamic Theme Sidebar Background
-  const getSidebarBg = () => {
-    switch (themeConfig?.sidebarStyle) {
-      case 'light-clean':
-        return 'bg-[#f8fafc] border-r border-slate-200/80 text-slate-700';
-      case 'midnight-navy':
-        return 'bg-[#091428] border-r border-[#15233c] text-slate-200';
-      case 'forest-dark':
-        return 'bg-[#06241a] border-r border-[#0d3c2d] text-slate-200';
-      case 'pure-dark':
-        return 'bg-[#000000] border-r border-neutral-900 text-neutral-200';
-      case 'classic-dark':
-        return 'bg-[#0f172a] border-r border-slate-800 text-slate-200';
-      case 'deep-slate':
-      default:
-        return 'bg-[#0b1324] border-r border-slate-800/80 text-slate-300';
-    }
-  };
-
   const getActiveItemClass = (isActive: boolean) => {
+    if (isActive) {
+      if (isLightSidebar) {
+        return 'bg-teal-50 text-teal-700 font-bold border-l-4 border-teal-600 shadow-2xs dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-400';
+      }
+      return 'bg-teal-500/15 text-teal-300 font-bold border-l-4 border-teal-400 shadow-2xs';
+    }
     if (isLightSidebar) {
-      if (!isActive) {
-        return 'text-slate-600 hover:text-slate-900 hover:bg-white/70 font-medium';
-      }
-      switch (themeConfig?.accentClass) {
-        case 'teal':
-          return 'bg-white text-teal-600 font-bold shadow-2xs border border-slate-200/70';
-        case 'blue':
-          return 'bg-white text-blue-600 font-bold shadow-2xs border border-slate-200/70';
-        case 'emerald':
-          return 'bg-white text-emerald-600 font-bold shadow-2xs border border-slate-200/70';
-        case 'indigo':
-          return 'bg-white text-indigo-600 font-bold shadow-2xs border border-slate-200/70';
-        case 'slate':
-        default:
-          return 'bg-white text-slate-900 font-bold shadow-2xs border border-slate-200/70';
-      }
+      return 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white';
     }
-
-    if (!isActive) {
-      return 'text-slate-400 hover:text-white hover:bg-slate-800/60 font-normal';
-    }
-    switch (themeConfig?.accentClass) {
-      case 'teal':
-        return 'bg-teal-500/15 text-teal-300 font-semibold';
-      case 'blue':
-        return 'bg-blue-500/15 text-blue-300 font-semibold';
-      case 'emerald':
-        return 'bg-emerald-500/15 text-emerald-300 font-semibold';
-      case 'indigo':
-        return 'bg-indigo-500/15 text-indigo-300 font-semibold';
-      case 'slate':
-      default:
-        return 'bg-slate-700/40 text-white font-semibold';
-    }
-  };
-
-  const getLogoBadgeBg = () => {
-    switch (themeConfig?.accentClass) {
-      case 'teal':
-        return 'bg-teal-600 text-white shadow-teal-500/30';
-      case 'blue':
-        return 'bg-blue-600 text-white shadow-blue-500/30';
-      case 'emerald':
-        return 'bg-emerald-600 text-white shadow-emerald-500/30';
-      case 'indigo':
-        return 'bg-indigo-600 text-white shadow-indigo-500/30';
-      case 'slate':
-      default:
-        return 'bg-slate-800 text-white border border-slate-700';
-    }
+    return 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200';
   };
 
   return (
     <>
-      {/* Mobile Backdrop overlay */}
+      {/* Mobile Backdrop */}
       {isOpen && (
         <div
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 lg:hidden"
         />
       )}
 
       <aside
-        id="mainSidebar"
-        className={`fixed lg:static top-0 bottom-0 left-0 w-64 ${getSidebarBg()} flex flex-col justify-between transition-transform duration-300 z-40 shrink-0 select-none ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:-ml-64'
-        }`}
+        id="sidebar"
+        className={`fixed lg:static top-0 left-0 bottom-0 z-40 flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
+          isLightSidebar
+            ? 'bg-white border-r border-slate-200/90 text-slate-800 dark:bg-[#0f172a] dark:border-slate-800 dark:text-slate-200'
+            : 'bg-[#09101f] border-r border-slate-800/90 text-slate-200'
+        } ${isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:overflow-hidden lg:border-none'}`}
       >
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Sidebar Header & Brand Logo (FinFlow BI Style) */}
-          <div className={`h-16 px-4 flex items-center justify-between shrink-0 ${isLightSidebar ? 'border-b border-slate-200/80' : 'border-b border-slate-800/60'}`}>
-            <div className="flex items-center space-x-3 overflow-hidden min-w-0">
-              <div className={`w-9 h-9 rounded-xl ${getLogoBadgeBg()} flex items-center justify-center font-black text-sm shrink-0 shadow-sm`}>
-                <BarChart3 className="w-5 h-5" />
-              </div>
-              <div className="truncate">
-                <div className="flex items-center space-x-1.5">
-                  <span className={`font-bold text-sm tracking-tight leading-tight truncate ${isLightSidebar ? 'text-slate-900' : 'text-white'}`}>
-                    {themeConfig?.brandName || 'FinFlow'}
-                  </span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 uppercase tracking-tight">
-                    {themeConfig?.logoText || 'BI'}
-                  </span>
-                </div>
-                <div className={`text-[10px] font-medium truncate mt-0.5 ${isLightSidebar ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {themeConfig?.brandSubtitle || 'Financial Treasury Suite'}
-                </div>
-              </div>
+        {/* Sidebar Header: Brand & Collapse */}
+        <div className={`p-4 flex items-center justify-between shrink-0 border-b ${isLightSidebar ? 'border-slate-200/80 bg-[#f8fafc] dark:bg-[#091122]' : 'border-slate-800/80 bg-[#070c18]'}`}>
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs ring-2 ring-teal-500/20">
+              {themeConfig?.logoText || 'S50'}
             </div>
-
-            {/* Actions: Collapse button for desktop and Close button for mobile */}
-            <div className="flex items-center space-x-1 shrink-0">
-              {onToggleSidebar && (
-                <button
-                  onClick={onToggleSidebar}
-                  title="ยุบแถบเมนู"
-                  className={`hidden lg:flex p-1.5 rounded-lg transition cursor-pointer ${
-                    isLightSidebar ? 'text-slate-400 hover:text-slate-800 hover:bg-slate-200/60' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <PanelLeftClose className="w-4 h-4" />
-                </button>
-              )}
-              {onCloseMobile && (
-                <button
-                  onClick={onCloseMobile}
-                  title="ปิดเมนู"
-                  className={`lg:hidden p-1.5 rounded-lg cursor-pointer ${
-                    isLightSidebar ? 'text-slate-400 hover:text-slate-800 hover:bg-slate-200/60' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
+            <div className="min-w-0">
+              <div className={`font-bold text-xs tracking-tight truncate ${isLightSidebar ? 'text-slate-900 dark:text-white' : 'text-white'}`}>
+                {themeConfig?.brandName || 'FinFlow Analytics'}
+              </div>
+              <div className="text-[10px] text-slate-400 truncate">
+                {themeConfig?.brandSubtitle || 'Enterprise BI Platform'}
+              </div>
             </div>
           </div>
 
-          {/* Workspace Switcher / Company Name */}
-          <div className="px-3 py-3 shrink-0 relative" ref={companyRef}>
+          {/* Desktop Collapse / Mobile Close */}
+          <div className="flex items-center space-x-1 shrink-0">
+            {onToggleSidebar && (
+              <button
+                onClick={onToggleSidebar}
+                title="ย่อแถบเมนู (Collapse Sidebar)"
+                className={`hidden lg:flex p-1.5 rounded-lg transition cursor-pointer ${
+                  isLightSidebar
+                    ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            )}
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                title="ปิดเมนู"
+                className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Company Workspace Selector */}
+        {companies && companies.length > 0 && currentCompany && (
+          <div className={`p-2.5 shrink-0 relative border-b ${isLightSidebar ? 'border-slate-200/80 bg-slate-50/50 dark:bg-slate-900/30' : 'border-slate-800/80 bg-[#0c1427]'}`} ref={companyRef}>
             <button
               onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-              className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition text-xs cursor-pointer shadow-2xs ${
+              className={`w-full flex items-center justify-between p-2 rounded-xl border text-left transition cursor-pointer ${
                 isLightSidebar
-                  ? 'bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800'
-                  : 'bg-[#131d33] hover:bg-[#182542] border border-slate-800/80 text-slate-200'
+                  ? 'bg-white border-slate-200 hover:border-teal-400 text-slate-800 dark:bg-slate-800/90 dark:border-slate-700 dark:text-slate-100'
+                  : 'bg-[#111c33] border-slate-700/80 hover:border-teal-500 text-slate-200'
               }`}
             >
-              <div className="flex items-center space-x-2.5 truncate">
-                <div className={`w-6 h-6 rounded-md font-bold text-xs flex items-center justify-center shrink-0 border ${
-                  currentCompany?.isDemo
-                    ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900'
-                    : currentCompany?.isImported
-                    ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900'
-                    : 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900'
-                }`}>
-                  {currentCompany?.isDemo ? 'D' : currentCompany?.isImported ? 'L' : 'บ'}
+              <div className="min-w-0 pr-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate flex items-center gap-1">
+                  <span>บริษัทปัจจุบัน:</span>
                 </div>
-                <div className="truncate">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className={`font-semibold truncate text-[11px] ${isLightSidebar ? 'text-slate-900' : 'text-slate-200'}`}>
-                      {themeConfig?.companyName || currentCompany?.name || 'บจก. สยาม คูลลิ่งฯ'}
-                    </span>
-                  </div>
-                  <div className={`text-[9.5px] truncate flex items-center gap-1.5 ${isLightSidebar ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {currentCompany?.isDemo ? (
-                      <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
-                        <span>[DEMO] ข้อมูลตัวอย่างทดสอบ</span>
-                      </span>
-                    ) : currentCompany?.isImported ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                        <span>[LIVE] ข้อมูลนำเข้าจริง</span>
-                      </span>
-                    ) : (
-                      <span>Sage 50 Direct Sync</span>
-                    )}
-                  </div>
+                <div className="font-bold text-xs truncate flex items-center gap-1.5">
+                  <span className="truncate">{currentCompany.name}</span>
                 </div>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+              <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
 
-            {/* Company Dropdown */}
-            {showCompanyDropdown && companies.length > 0 && (
-              <div className={`absolute left-3 right-3 top-full mt-1.5 rounded-xl shadow-2xl border p-2 z-50 space-y-1 ${
-                isLightSidebar ? 'bg-white border-slate-200 text-slate-800' : 'bg-[#141e35] border-slate-700/80 text-slate-200'
+            {/* Dropdown Menu */}
+            {showCompanyDropdown && onSelectCompany && (
+              <div className={`absolute top-full left-2.5 right-2.5 mt-1 rounded-2xl p-2 z-50 space-y-1 shadow-2xl border ${
+                isLightSidebar ? 'bg-white border-slate-200 text-slate-800' : 'bg-[#141e35] border-slate-700 text-slate-200'
               }`}>
-                <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>สลับบริษัท / Workspace</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold">
-                    DEMO SUITES
-                  </span>
+                <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 text-slate-400">
+                  เลือกชุดข้อมูล / Workspace
                 </div>
                 {companies.map((comp) => (
                   <button
                     key={comp.id}
                     onClick={() => {
-                      if (onSelectCompany) onSelectCompany(comp);
+                      onSelectCompany(comp);
                       setShowCompanyDropdown(false);
                     }}
-                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition cursor-pointer ${
-                      currentCompany?.id === comp.id
-                        ? isLightSidebar
-                          ? 'bg-blue-50 text-blue-700 font-bold'
-                          : 'bg-blue-500/20 text-blue-300 font-bold'
-                        : isLightSidebar
-                        ? 'hover:bg-slate-100 text-slate-700'
-                        : 'text-slate-300 hover:bg-slate-800/60'
+                    className={`w-full text-left p-2 rounded-xl text-xs transition cursor-pointer flex items-center justify-between ${
+                      currentCompany.id === comp.id
+                        ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <div className="truncate">
-                      <div className="font-medium text-[11px] truncate flex items-center gap-1.5">
-                        <span className="truncate">{comp.name}</span>
-                        {comp.isDemo && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold shrink-0">
-                            DEMO
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[9.5px] text-slate-400">{comp.sageEdition}</div>
+                    <div className="truncate pr-2">
+                      <div className="font-bold truncate">{comp.name}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{comp.sageEdition}</div>
                     </div>
-                    {currentCompany?.id === comp.id && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                    {currentCompany.id === comp.id && (
+                      <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                    )}
                   </button>
                 ))}
               </div>
             )}
           </div>
+        )}
 
-          {/* Navigation Items (Organized into Original 4 Categories) */}
-          <nav className="flex-1 px-3 space-y-3.5 overflow-y-auto custom-scrollbar pt-1">
-            {/* GROUP 1: FINANCIAL REPORTS (CORE) */}
+        {/* Scrollable Navigation Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-5">
+          <nav className="space-y-4">
+            {/* GROUP 1: FINANCIAL & OPERATIONAL SUITE (DAILY CORE) */}
             <div className="space-y-1">
-              <div className="flex items-center justify-between px-3 py-1">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${isLightSidebar ? 'text-slate-500' : 'text-slate-400'}`}>
-                  FINANCIAL REPORTS
-                </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-tight">
-                  CORE
-                </span>
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                FINANCIAL &amp; OPERATIONS
               </div>
 
-              {/* 1. Sales & Margin Hub */}
+              {/* 1. Dashboard Overview */}
               <button
                 onClick={() => {
                   onSelectTab('dashboard');
@@ -360,7 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}`}
                 >
                   <Clock className="w-4 h-4 shrink-0" />
-                  <span>A/R Aging (วิเคราะห์ลูกหนี้)</span>
+                  <span>A/R Aging &amp; Collections</span>
                 </button>
               )}
 
@@ -396,23 +320,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               )}
 
-              {/* 5. Smart Risk Alerts & Executive Digest */}
-              {features.executiveDigest && (
-                <button
-                  onClick={() => {
-                    onSelectTab('executive-alerts');
-                    if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
-                  }}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition cursor-pointer ${getActiveItemClass(
-                    activeTab === 'executive-alerts'
-                  )}`}
-                >
-                  <Bell className="w-4 h-4 shrink-0" />
-                  <span>Smart Alerts &amp; Digest</span>
-                </button>
-              )}
-
-              {/* 6. Inventory Valuation */}
+              {/* 5. Inventory Valuation */}
               {features.inventoryValuation && (
                 <button
                   onClick={() => {
@@ -428,7 +336,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               )}
 
-              {/* 5. Standard Reports */}
+              {/* 6. Smart Risk Alerts & Executive Digest */}
+              {features.executiveDigest && (
+                <button
+                  onClick={() => {
+                    onSelectTab('executive-alerts');
+                    if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
+                  }}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition cursor-pointer ${getActiveItemClass(
+                    activeTab === 'executive-alerts'
+                  )}`}
+                >
+                  <Bell className="w-4 h-4 shrink-0" />
+                  <span>Smart Alerts &amp; Digest</span>
+                </button>
+              )}
+
+              {/* 7. Standard Financial Reports */}
               <button
                 onClick={() => {
                   onSelectTab('standard-reports');
@@ -470,70 +394,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
 
-            {/* GROUP 3: DATA OPERATIONS (ETL/CDM) */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between px-3 py-1">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${isLightSidebar ? 'text-slate-500' : 'text-slate-400'}`}>
-                  DATA OPERATIONS
-                </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 uppercase tracking-tight">
-                  ETL/CDM
-                </span>
-              </div>
-
-              {/* Import Sage Excel */}
-              <button
-                onClick={() => {
-                  onSelectTab('data-hub');
-                  if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
-                }}
-                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition cursor-pointer ${getActiveItemClass(
-                  activeTab === 'data-hub'
-                )}`}
-              >
-                <Database className="w-4 h-4 shrink-0" />
-                <span>Import Sage Excel</span>
-              </button>
-
-              {/* ODBC Direct Sync */}
-              {features.odbcSync && (
-                <button
-                  onClick={() => {
-                    onSelectTab('odbc-sync');
-                    if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
-                  }}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition cursor-pointer ${getActiveItemClass(
-                    activeTab === 'odbc-sync'
-                  )}`}
-                >
-                  <RefreshCw className="w-4 h-4 shrink-0" />
-                  <span>ODBC Direct Sync</span>
-                </button>
-              )}
-
-              {/* Custom Field Mapping */}
-              <button
-                onClick={() => {
-                  onSelectTab('field-mapping');
-                  if (window.innerWidth < 1024 && onCloseMobile) onCloseMobile();
-                }}
-                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition cursor-pointer ${getActiveItemClass(
-                  activeTab === 'field-mapping'
-                )}`}
-              >
-                <Layers className="w-4 h-4 shrink-0" />
-                <span>Custom Field Mapping</span>
-              </button>
-            </div>
-
-            {/* GROUP 4: ADMINISTRATION */}
-            {currentUser.role === 'executive' && (
-              <div className="space-y-1">
+            {/* GROUP 3: SYSTEM ADMINISTRATION & DATA CONTROL CENTER */}
+            {(currentUser.role === 'executive' || currentUser.role === 'finance') && (
+              <div className="space-y-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/70">
                 <div className="flex items-center justify-between px-3 py-1">
                   <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLightSidebar ? 'text-slate-500' : 'text-slate-400'}`}>
                     <span>ADMINISTRATION</span>
                   </span>
-                  <Shield className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 uppercase tracking-tight">
+                    DATA &amp; SETTINGS
+                  </span>
                 </div>
 
                 <button
@@ -545,8 +415,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     activeTab === 'settings'
                   )}`}
                 >
-                  <SlidersHorizontal className="w-4 h-4 shrink-0" />
-                  <span>ตั้งค่าโมดูล &amp; สิทธิ์ (Settings)</span>
+                  <Shield className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
+                  <div className="text-left flex-1 min-w-0">
+                    <div className="truncate font-semibold">Settings &amp; Data Center</div>
+                    <div className="text-[10px] opacity-75 truncate">Data Hub, Connectors, RBAC &amp; ธีม</div>
+                  </div>
                 </button>
               </div>
             )}
@@ -562,7 +435,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}>
               {/* User summary */}
               <div className={`flex items-center space-x-3 pb-2.5 border-b ${isLightSidebar ? 'border-slate-200' : 'border-slate-700/80'}`}>
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-teal-600 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs">
                   {currentUser.avatarInitials || 'SC'}
                 </div>
                 <div className="min-w-0">
@@ -581,7 +454,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {onToggleLang && (
                   <div className={`flex items-center justify-between p-2 rounded-xl text-xs ${isLightSidebar ? 'bg-slate-100 text-slate-700' : 'bg-slate-800/50 text-slate-300'}`}>
                     <div className="flex items-center space-x-2 font-medium">
-                      <Globe className="w-3.5 h-3.5 text-blue-600" />
+                      <Globe className="w-3.5 h-3.5 text-teal-600" />
                       <span>{lang === 'th' ? 'ภาษา' : 'Language'}</span>
                     </div>
                     <button
@@ -618,7 +491,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className={`space-y-1.5 pt-1 border-t ${isLightSidebar ? 'border-slate-200' : 'border-slate-700/80'}`}>
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                   <span>{lang === 'th' ? 'สิทธิ์ผู้ใช้งาน' : 'User Role'}</span>
-                  <Shield className="w-3 h-3 text-blue-600" />
+                  <Shield className="w-3 h-3 text-teal-600" />
                 </div>
                 <div className="space-y-1 max-h-36 overflow-y-auto custom-scrollbar">
                   {roles.map((r) => (
@@ -631,18 +504,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={`w-full text-left p-1.5 rounded-lg text-xs transition cursor-pointer ${
                         currentUser.role === r.role
                           ? isLightSidebar
-                            ? 'bg-blue-50 text-blue-700 font-bold'
-                            : 'bg-blue-500/20 text-blue-300 font-bold'
+                            ? 'bg-teal-50 text-teal-700 font-bold'
+                            : 'bg-teal-500/20 text-teal-300 font-bold'
                           : isLightSidebar
                           ? 'hover:bg-slate-100 text-slate-700'
                           : 'hover:bg-slate-800 text-slate-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="truncate text-[11px]">{r.title}</span>
-                        {currentUser.role === r.role && (
-                          <CheckCircle2 className="w-3 h-3 text-blue-600 shrink-0" />
-                        )}
+                      <div className="flex items-center space-x-1.5">
+                        <span>{r.icon}</span>
+                        <span className="font-semibold">{r.title}</span>
                       </div>
                     </button>
                   ))}
@@ -651,30 +522,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* User Profile Card Button */}
+          {/* Bottom Bar Profile Trigger */}
           <button
-            id="btnProfileMenu"
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            className={`w-full flex items-center justify-between p-2 rounded-xl transition cursor-pointer text-left shadow-2xs ${
+            className={`w-full flex items-center justify-between p-2 rounded-xl transition cursor-pointer ${
               isLightSidebar
-                ? 'bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800'
-                : 'bg-[#131d33] hover:bg-[#182542] border border-slate-800/80 text-slate-200'
+                ? 'hover:bg-slate-100 text-slate-800'
+                : 'hover:bg-slate-800/80 text-slate-200'
             }`}
           >
             <div className="flex items-center space-x-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                 {currentUser.avatarInitials || 'SC'}
               </div>
-              <div className="min-w-0">
-                <div className={`text-xs font-semibold truncate ${isLightSidebar ? 'text-slate-900' : 'text-slate-200'}`}>
-                  {currentUser.name}
-                </div>
-                <div className={`text-[10px] truncate ${isLightSidebar ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {currentUser.department}
-                </div>
+              <div className="min-w-0 text-left">
+                <div className="font-bold text-xs truncate leading-tight">{currentUser.name}</div>
+                <div className="text-[10px] text-slate-400 truncate">{currentUser.department}</div>
               </div>
             </div>
-            <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1.5" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           </button>
         </div>
       </aside>

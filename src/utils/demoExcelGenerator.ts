@@ -63,6 +63,92 @@ export function downloadExpressDemoExcel() {
   XLSX.writeFile(workbook, 'Express_Accounting_Sample_Data.xlsx');
 }
 
+export function downloadFlowAccountDemoExcel() {
+  const data = INITIAL_INVOICES.map((inv) => ({
+    'เลขที่ใบแจ้งหนี้/ใบเสร็จ': inv.invoiceNo,
+    'วันที่ออกเอกสาร': inv.date,
+    'วันครบกำหนดชำระ': inv.dueDate,
+    'ชื่อคู่ค้า/ลูกค้า': inv.customerName,
+    'เลขประจำตัวผู้เสียภาษี': '010555800' + Math.floor(1000 + Math.random() * 9000),
+    'พนักงานขาย': inv.salesRep,
+    'รหัสรายการ': inv.itemCode,
+    'ชื่อรายการสินค้า/บริการ': inv.itemDescription,
+    'หมวดหมู่': inv.category,
+    'จำนวน': inv.quantity,
+    'ราคาต่อหน่วย (บาท)': inv.unitPrice,
+    'มูลค่าก่อนภาษี (THB)': inv.netAmount,
+    'ภาษีมูลค่าเพิ่ม 7%': Math.round(inv.netAmount * 0.07),
+    'ยอดรวมทั้งสิ้น': Math.round(inv.netAmount * 1.07),
+    'ต้นทุนขาย (COGS)': inv.cogs,
+    'ยอดชำระแล้ว': inv.paidAmount,
+    'ยอดค้างรับ': inv.outstandingAmount,
+    'สถานะเอกสาร': inv.status === 'Paid' ? 'เก็บเงินแล้ว' : inv.status === 'Pending' ? 'รอเก็บเงิน' : 'เลยกำหนดชำระ',
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'FlowAccount_Sales_Report');
+
+  XLSX.writeFile(workbook, 'FlowAccount_Sample_Invoices.xlsx');
+}
+
+export function downloadPeakEngineDemoExcel() {
+  const data = INITIAL_INVOICES.map((inv) => ({
+    'Document_No': inv.invoiceNo,
+    'Issue_Date': inv.date,
+    'Due_Date': inv.dueDate,
+    'Contact_Code': inv.customerId,
+    'Contact_Name': inv.customerName,
+    'Sales_Person': inv.salesRep,
+    'Product_Code': inv.itemCode,
+    'Description': inv.itemDescription,
+    'Product_Group': inv.category,
+    'Qty': inv.quantity,
+    'Price_Per_Unit': inv.unitPrice,
+    'Subtotal_Amount': inv.netAmount,
+    'COGS_Amount': inv.cogs,
+    'Gross_Profit': inv.grossProfit,
+    'Paid_Amount': inv.paidAmount,
+    'Remaining_Balance': inv.outstandingAmount,
+    'Payment_Status': inv.status,
+    'Project_Code': inv.invoiceNo.startsWith('CR-') ? 'PRJ-COLD-ROOM' : 'PRJ-GENERAL',
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'PEAK_Sales_Journal');
+
+  XLSX.writeFile(workbook, 'PEAK_Engine_Sample_Data.xlsx');
+}
+
+export function downloadMyAccountDemoExcel() {
+  const data = INITIAL_INVOICES.map((inv) => ({
+    'DocNo': inv.invoiceNo,
+    'DocDate': inv.date,
+    'DueDate': inv.dueDate,
+    'CustCode': inv.customerId,
+    'CustName': inv.customerName,
+    'Salesman': inv.salesRep,
+    'GoodCode': inv.itemCode,
+    'GoodName': inv.itemDescription,
+    'GoodGroup': inv.category,
+    'Quantity': inv.quantity,
+    'UnitPrice': inv.unitPrice,
+    'NetSales': inv.netAmount,
+    'CostAmount': inv.cogs,
+    'GrossMargin': inv.grossProfit,
+    'PaidAmt': inv.paidAmount,
+    'ARBalance': inv.outstandingAmount,
+    'BillStatus': inv.status,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'myAccount_Winspeed_Export');
+
+  XLSX.writeFile(workbook, 'myAccount_Winspeed_Sample.xlsx');
+}
+
 export function downloadBlankStarterTemplate() {
   const blankHeaders = [
     {
@@ -70,11 +156,11 @@ export function downloadBlankStarterTemplate() {
       'Date / วันที่': '2026-08-01',
       'Due Date / วันครบกำหนด': '2026-08-31',
       'Customer ID / รหัสลูกค้า': 'CUST-001',
-      'Customer Name / ชื่อลูกค้า': 'ตัวอย่าง บจก. ลูกค้าเอเปกซ์',
+      'Customer Name / ชื่อลูกค้า': 'ตัวอย่าง บจก. ลูกค้าเอเปกซ์ มาร์เก็ตติ้ง',
       'Sales Rep / พนักงานขาย': 'สมศักดิ์ ช่างทอง',
-      'Item Code / รหัสสินค้า': 'PIR-75MM',
-      'Description / รายละเอียดสินค้า': 'แผ่นฉนวนกันความร้อน PIR หนา 75 มม.',
-      'Category / หมวดหมู่': 'Insulated Panels',
+      'Item Code / รหัสสินค้า': 'SKU-001',
+      'Description / รายละเอียดสินค้า': 'สินค้าและบริการมาตรฐานสำหรับธุรกิจ SME',
+      'Category / หมวดหมู่': 'General Trading',
       'Quantity / จำนวน': 100,
       'Unit Price / ราคาต่อหน่วย': 850,
       'Total Amount / ยอดขายสุทธิ': 85000,

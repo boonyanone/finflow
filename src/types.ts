@@ -1,8 +1,28 @@
 /**
- * Sage 50 Enterprise BI Platform - Canonical Types
+ * Sage 50 & Thai SME BI Platform - Canonical Types
  */
 
 export type UserRole = 'executive' | 'finance' | 'sales_rep' | 'warehouse';
+
+export type SmeBusinessType =
+  | 'wholesale_retail' // ซื้อมา-ขายไป / ค้าส่ง-ค้าปลีก (Wholesale & Retail Trading)
+  | 'services_consulting' // ธุรกิจบริการ / วิชาชีพ / ที่ปรึกษา / ดิจิทัล (Professional & Agency Services)
+  | 'contractor_project' // ธุรกิจรับเหมา / สัญญาโครงการ / งานระบบ (Contractor & Project-Based)
+  | 'manufacturing' // ธุรกิจผลิต / โรงงานแปรรูป / ประกอบ (Manufacturing & Packaging)
+  | 'logistics_warehouse' // ธุรกิจขนส่ง / โลจิสติกส์ / คลังสินค้า (Logistics & Supply Chain)
+  | 'food_hospitality'; // ธุรกิจอาหาร เครื่องดื่ม / คาเฟ่ & โรงแรม (F&B / Hospitality)
+
+export interface SmeBusinessSectorInfo {
+  id: SmeBusinessType;
+  name: string;
+  nameEn: string;
+  description: string;
+  badge: string;
+  iconName: string;
+  docTerminology: string; // เช่น 'ใบส่งสินค้า / บิลขาย' | 'ใบแจ้งหนี้ค่าบริการ' | 'ใบเบิกเงินงวดงาน'
+  cogsTerminology: string; // เช่น 'ต้นทุนสินค้า' | 'ต้นทุนบริการ/ค่าจ้าง' | 'ต้นทุนโครงการ'
+  keyMetrics: string[];
+}
 
 export interface UserProfile {
   id: string;
@@ -356,6 +376,43 @@ export interface ActiveFinancialAlert {
   isResolved: boolean;
 }
 
+export interface ThaiAccountingPreset {
+  id: string;
+  name: string;
+  thaiName: string;
+  vendor: string;
+  category: 'Desktop ERP' | 'Cloud Accounting' | 'POS & Retail' | 'Construction & Projects';
+  description: string;
+  fileFormat: string;
+  sampleFileName: string;
+  isReady: boolean;
+  tier: 'Phase 1: Universal Excel Ingestion' | 'Phase 2: Direct Cloud API' | 'Phase 3: Native Desktop Agent (ODBC/DBF)';
+}
+
+export interface TaxSummaryMetrics {
+  totalRevenueBeforeVat: number;
+  outputVat7: number;
+  estimatedInputVat7: number;
+  netVatPayable: number;
+  estimatedWht3Pct: number;
+  estimatedWht1Pct: number;
+  nextVatFilingDate: string;
+  nextWhtFilingDate: string;
+}
+
+export interface ConcentrationRiskMetrics {
+  top1CustomerName: string;
+  top1CustomerAmount: number;
+  top1CustomerPct: number;
+  top3CustomerAmount: number;
+  top3CustomerPct: number;
+  customerRiskLevel: 'Safe' | 'Moderate' | 'High';
+  top1RepName: string;
+  top1RepAmount: number;
+  top1RepPct: number;
+  repRiskLevel: 'Safe' | 'Moderate' | 'High';
+}
+
 export interface ExecutiveDigestReport {
   periodTitle: string;
   reportDate: string;
@@ -387,4 +444,5 @@ export interface ExecutiveDigestReport {
   redFlags: string[];
   strategicRecommendations: string[];
 }
+
 

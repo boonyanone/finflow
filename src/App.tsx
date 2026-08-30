@@ -115,10 +115,10 @@ export const App: React.FC = () => {
   // Current Logged-in User Profile (RBAC Simulation)
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: 'usr-1',
-    name: 'สมชาย มั่นคง (Admin)',
-    email: 'somchai@siamcooling.co.th',
+    name: 'สมชาย มั่นคง (เจ้าของกิจการ / Admin)',
+    email: 'admin@siam-supply.co.th',
     role: 'executive',
-    department: 'Chief Executive',
+    department: 'Executive Board',
     avatarInitials: 'SC',
     accessibleRepName: undefined,
   });
@@ -437,6 +437,7 @@ export const App: React.FC = () => {
               onLoadDemoData={handleLoadDemoData}
               onClearData={handleClearData}
               onOpenUpload={() => setIsUploadOpen(true)}
+              onSelectTab={setActiveTab}
             />
           )}
 
@@ -509,7 +510,23 @@ export const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 'field-mapping' && <CustomFieldMappingView />}
+          {activeTab === 'field-mapping' && (
+            <SettingsAdminView
+              features={features}
+              onToggleFeature={handleToggleFeature}
+              currentUser={currentUser}
+              onSelectRole={handleRoleChange}
+              onShowToast={showToast}
+              themeConfig={themeConfig}
+              onUpdateTheme={handleUpdateTheme}
+              invoices={invoices}
+              mappingProfiles={mappingProfiles}
+              onOpenUpload={() => setIsUploadOpen(true)}
+              onImportComplete={handleImportComplete}
+              companyName={currentCompany.name}
+              initialAdminTab="data_hub"
+            />
+          )}
 
           {activeTab === 'report-studio' && (
             <ReportStudioView
@@ -531,14 +548,40 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'data-hub' && (
-            <DataHubView
+            <SettingsAdminView
+              features={features}
+              onToggleFeature={handleToggleFeature}
+              currentUser={currentUser}
+              onSelectRole={handleRoleChange}
+              onShowToast={showToast}
+              themeConfig={themeConfig}
+              onUpdateTheme={handleUpdateTheme}
               invoices={invoices}
               mappingProfiles={mappingProfiles}
               onOpenUpload={() => setIsUploadOpen(true)}
+              onImportComplete={handleImportComplete}
+              companyName={currentCompany.name}
+              initialAdminTab="data_hub"
             />
           )}
 
-          {activeTab === 'odbc-sync' && <OdbcSyncView onShowToast={showToast} />}
+          {activeTab === 'odbc-sync' && (
+            <SettingsAdminView
+              features={features}
+              onToggleFeature={handleToggleFeature}
+              currentUser={currentUser}
+              onSelectRole={handleRoleChange}
+              onShowToast={showToast}
+              themeConfig={themeConfig}
+              onUpdateTheme={handleUpdateTheme}
+              invoices={invoices}
+              mappingProfiles={mappingProfiles}
+              onOpenUpload={() => setIsUploadOpen(true)}
+              onImportComplete={handleImportComplete}
+              companyName={currentCompany.name}
+              initialAdminTab="data_hub"
+            />
+          )}
 
           {activeTab === 'settings' && (
             <SettingsAdminView
@@ -549,6 +592,12 @@ export const App: React.FC = () => {
               onShowToast={showToast}
               themeConfig={themeConfig}
               onUpdateTheme={handleUpdateTheme}
+              invoices={invoices}
+              mappingProfiles={mappingProfiles}
+              onOpenUpload={() => setIsUploadOpen(true)}
+              onImportComplete={handleImportComplete}
+              companyName={currentCompany.name}
+              initialAdminTab="business_profile"
             />
           )}
         </main>

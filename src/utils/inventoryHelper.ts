@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { InventoryItem, InvoiceRecord, Customer, ArAgingBucket } from '../types';
-import { INITIAL_INVENTORY, SIAM_COLD_ROOM_CUSTOMERS, SIAM_COLD_ROOM_AR_AGING } from '../data/sampleSage50Data';
+import { INITIAL_INVENTORY, INITIAL_CUSTOMERS, INITIAL_AR_AGING } from '../data/sampleSage50Data';
 
 /**
  * Intelligently synthesizes an Inventory Valuation Catalog from Invoice records
@@ -8,14 +8,6 @@ import { INITIAL_INVENTORY, SIAM_COLD_ROOM_CUSTOMERS, SIAM_COLD_ROOM_AR_AGING } 
  */
 export function synthesizeInventoryFromInvoices(invoices: InvoiceRecord[]): InventoryItem[] {
   if (!invoices || invoices.length === 0) {
-    return INITIAL_INVENTORY;
-  }
-
-  // Check if invoice items match cold room demo
-  const isColdRoom = invoices.some((i) =>
-    i.itemCode?.startsWith('PIR-') || i.itemCode?.startsWith('RW-') || i.itemCode?.startsWith('DOR-')
-  );
-  if (isColdRoom) {
     return INITIAL_INVENTORY;
   }
 
@@ -116,10 +108,7 @@ export function synthesizeInventoryFromInvoices(invoices: InvoiceRecord[]): Inve
  * Synthesize Customers from Invoice list
  */
 export function synthesizeCustomersFromInvoices(invoices: InvoiceRecord[]): Customer[] {
-  if (!invoices || invoices.length === 0) return SIAM_COLD_ROOM_CUSTOMERS;
-
-  const isColdRoom = invoices.some((i) => i.customerName?.includes('ซีฟู้ด') || i.customerName?.includes('เจริญคลังเย็น'));
-  if (isColdRoom) return SIAM_COLD_ROOM_CUSTOMERS;
+  if (!invoices || invoices.length === 0) return INITIAL_CUSTOMERS;
 
   const custMap = new Map<string, { name: string; salesRep: string; totalSales: number; count: number }>();
   invoices.forEach((inv) => {
@@ -160,10 +149,7 @@ export function synthesizeCustomersFromInvoices(invoices: InvoiceRecord[]): Cust
  * Synthesize AR Aging Buckets from Invoices
  */
 export function synthesizeArAgingFromInvoices(invoices: InvoiceRecord[]): ArAgingBucket[] {
-  if (!invoices || invoices.length === 0) return SIAM_COLD_ROOM_AR_AGING;
-
-  const isColdRoom = invoices.some((i) => i.customerName?.includes('ซีฟู้ด') || i.customerName?.includes('เจริญคลังเย็น'));
-  if (isColdRoom) return SIAM_COLD_ROOM_AR_AGING;
+  if (!invoices || invoices.length === 0) return INITIAL_AR_AGING;
 
   const map = new Map<
     string,
