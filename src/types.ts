@@ -445,4 +445,55 @@ export interface ExecutiveDigestReport {
   strategicRecommendations: string[];
 }
 
+// ----------------------------------------------------
+// Phase 3 Data Contracts: Licensing, RBAC & Persistence
+// ----------------------------------------------------
+export type LicenseTier = 'starter' | 'professional' | 'enterprise_unlimited';
+export type DatabaseDriverType = 'indexeddb' | 'localstorage' | 'sqlite' | 'postgresql';
+
+export interface LicenseEntitlement {
+  licenseKey: string;
+  tier: LicenseTier;
+  issuedTo: string;
+  companyTaxId?: string;
+  maxUsers: number;
+  maxCompanies: number;
+  validUntil: string;
+  isOfflineActivated: boolean;
+  signatureToken: string;
+  features: {
+    unlimitedSync: boolean;
+    aiCopilotPro: boolean;
+    multiCompany: boolean;
+    customFieldMapping: boolean;
+    auditLogExport: boolean;
+  };
+}
+
+export interface AuditTrailLog {
+  id: string;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  userRole: UserRole;
+  action: 'IMPORT_DATA' | 'UPDATE_TARGETS' | 'EXPORT_REPORT' | 'CHANGE_SCHEME' | 'UPDATE_MAPPING' | 'SYSTEM_CONFIG';
+  module: 'Sales' | 'AR' | 'CashFlow' | 'DataHub' | 'Settings';
+  details: string;
+  ipAddress?: string;
+  status: 'SUCCESS' | 'WARNING' | 'FAILED';
+}
+
+export interface BackupSnapshot {
+  schemaVersion: string;
+  exportTimestamp: string;
+  companyId: string;
+  companyName: string;
+  recordCounts: {
+    invoices: number;
+    customers: number;
+    products: number;
+  };
+  checksum: string;
+}
+
 
